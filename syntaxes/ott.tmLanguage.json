@@ -1,0 +1,390 @@
+{
+	"$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+	"name": "Ott",
+	"patterns": [{
+			"include": "#keywords"
+		},
+		{
+			"include": "#strings"
+		},
+		{
+			"include": "#operators"
+		},
+		{
+			"include": "#linecomment"
+		},
+		{
+			"include": "#homblock"
+		},
+		{
+			"include": "#ruledecl"
+		},
+		{
+			"include": "#vardecl"
+		},
+		{
+			"include": "#builtindecl"
+		},
+		{
+			"include": "#variant"
+		},
+		{
+			"include": "#relationdecl"
+		},
+		{
+			"include": "#hbar"
+		},
+		{
+			"include": "#substdecl"
+		},
+		{
+			"include": "#binddecl"
+		},
+		{
+			"include": "#bindgroup"
+		}
+	],
+	"repository": {
+		"keywords": {
+			"patterns": [{
+				"name": "keyword.control.ott",
+				"match": "\\b(grammar|embed|subrules|contextrules|freevars|substitutions|single|multiple|defns|defn|by|homs|funs|fun|parsing|begincoqsection|endcoqsection|coqvariable|left|right)\\b"
+			}]
+		},
+		"homblock": {
+			"patterns": [{
+					"name": "support.function.ott",
+					"contentName": "comment.ott",
+					"begin": "{{( )*(coq-equality|lex|repr-locally-nameless|phantom|texvar|isavar|holvar|ocamlvar|aux|lem|ihtexlong|order|isasyn|isaprec|lemwcf|coq-universe|tex-preamble|coq-lib|isa-auxfn-proof|isa-subrule-proof|isa-proof|com)",
+					"end": "}}"
+				},
+				{
+					"include": "#coqblock"
+				},
+				{
+					"include": "#isablock"
+				},
+				{
+					"include": "#holblock"
+				},
+				{
+					"include": "#texblock"
+				},
+				{
+					"include": "#ocamlblock"
+				}
+			]
+		},
+		"coqblock": {
+			"patterns": [{
+				"name": "support.function.ott",
+				"contentName": "comment.ott",
+				"begin": "{{( )*(coq|icho|ichlo|ich|ic|ch)",
+				"end": "}}",
+				"patterns": [{
+					"include": "source.coq"
+				}]
+			}]
+		},
+		"isablock": {
+			"patterns": [{
+				"name": "support.function.ott",
+				"contentName": "comment.ott",
+				"begin": "{{( )*(isa)",
+				"end": "}}",
+				"patterns": [{
+					"include": "source.isabelle"
+				}]
+			}]
+		},
+		"holblock": {
+			"patterns": [{
+				"name": "support.function.ott",
+				"contentName": "comment.block.ott",
+				"begin": "{{( )*(hol)",
+				"end": "}}",
+				"patterns": [{
+					"include": "source.isabelle"
+				}]
+			}]
+		},
+		"texblock": {
+			"patterns": [{
+				"name": "support.function.ott",
+				"contentName": "comment.ott",
+				"begin": "{{( )*(tex)",
+				"end": "}}",
+				"patterns": [{
+					"include": "text.tex.latex"
+				}]
+			}]
+		},
+		"ocamlblock": {
+			"patterns": [{
+				"name": "support.function.ott",
+				"contentName": "comment.ott",
+				"begin": "{{( )*(ocaml)",
+				"end": "}}",
+				"patterns": [{
+					"include": "source.ocaml"
+				}]
+			}]
+		},
+		"operators": {
+			"patterns": [{
+				"name": "constant.other.symbol.ott2",
+				"match": "<::|\\.\\.|\\.\\.\\.|\\.\\.\\.\\."
+			}]
+		},
+		"linecomment": {
+			"name": "comment.ott",
+			"match": "(%)(?!(\\[=*\\[|\\]=*\\])).*$\n?",
+			"captures": {
+				"1": {
+					"name": "comment.ott"
+				}
+			}
+		},
+		"ruledecl": {
+			"patterns": [{
+				"name": "keyword",
+				"match": "^\\s*((?!formula|judgement|terminals)[_a-zA-Z]+)(\\s*,\\s*([_a-zA-Z0-9]+))*\\s*({{.*}})*\\s*::(.*)\\s*::=",
+				"captures": {
+
+					"1": {
+						"name": "entity.name.function.ott"
+					},
+					"2": {
+						"name": "keyword.ott"
+					},
+					"3": {
+						"name": "entity.name.function.ott"
+					},
+					"4": {
+						"name": "variable.ott"
+					},
+					"5": {
+						"name": "variable.ott"
+					}
+
+				}
+			}]
+		},
+		"vardecl": {
+			"patterns": [{
+				"match": "(metavar|indexvar)\\s([_a-zA-Z]+)((\\s*(,)\\s*([_a-zA-Z]+))*)\\s*(::=)",
+				"captures": {
+					"1": {
+						"name": "keyword.ott"
+					},
+					"2": {
+						"name": "entity.name.function.ott"
+					},
+					"3": {
+						"name": "entity.name.function.ott"
+					},
+					"7": {
+						"name": "keyword"
+					}
+
+				}
+			}]
+		},
+		"relationdecl": {
+			"patterns": [{
+				"match": "::((?!(::)).*)::((?!(::)).*)::((?!(::)).*)by",
+				"captures": {
+					"0": {
+						"name": "keyword.ott"
+					},
+					"1": {
+						"name": "text.command.ott"
+					},
+					"2": {
+						"name": "keyword.ott"
+					},
+					"3": {
+						"name": "entity.name.function.ott"
+					},
+					"4": {
+						"name": "entity.name.function.ott"
+					},
+					"5": {
+						"name": "variable.ott"
+					},
+					"6": {
+						"name": "variable.ott"
+					},
+					"7": {
+						"name": "variable.ott"
+					}
+
+				}
+			}]
+		},
+		"hbar": {
+			"patterns": [{
+				"match": "^\\s*(\\-+)\\s*::\\s*((?!(\\-))[a-zA-Z0-9_]+)\\s*",
+				"captures": {
+					"0": {
+						"name": "keyword.ott"
+					},
+					"1": {
+						"name": "comment.ott"
+					},
+					"2": {
+						"name": "variable.ott"
+					}
+
+				}
+			}]
+		},
+		"substdecl": {
+			"patterns": [{
+				"match": "^\\s*(single|multiple)\\s+((?!(::))[a-zA-Z0-9_]+)\\s+((?!(::))[a-zA-Z0-9_]+)\\s*::\\s*((?!(\\-))[a-zA-Z_0-9]+)\\s*",
+				"captures": {
+					"0": {
+						"name": "keyword.ott"
+					},
+					"1": {
+						"name": "keyword.ott"
+					},
+					"2": {
+						"name": "entity.name.function.ott"
+					},
+					"3": {
+						"name": "entity.name.class.ott"
+					},
+					"4": {
+						"name": "support.constant.property-value.ott"
+					},
+					"5": {
+						"name": "variable.ott"
+					},
+					"6": {
+						"name": "variable.ott"
+					}
+
+				}
+			}]
+		},
+		"variant": {
+			"patterns": [{
+				"match": "^\\s*(\\|)\\s+((?!(::)).*)\\s*(::)\\s*(M|S|(\\s*))\\s*(::)\\s*([_a-zA-Z0-9]+)",
+				"captures": {
+
+					"1": {
+						"name": "keyword.ott"
+					},
+					"3": {
+						"name": "keyword.ott"
+					},
+					"4": {
+						"name": "keyword.ott"
+					},
+					"5": {
+						"name": "entity.name.function.ott"
+					},
+					"6": {
+						"name": "keyword.ott"
+					},
+					"7": {
+						"name": "keyword.ott"
+					},
+					"8": {
+						"name": "variable.ott"
+					}
+
+
+				}
+			}]
+		},
+		"builtindecl": {
+			"patterns": [{
+				"name": "keyword",
+				"match": "^\\s*(formula|judgement|judgment|terminals)\\s*({{.*}})*\\s*::(.*)\\s*::=",
+				"comment": "TODO entity.name.function",
+				"captures": {
+
+					"1": {
+						"name": "keyword.ott"
+					},
+					"2": {
+						"name": "keyword.ott"
+					},
+					"3": {
+						"name": "variable.ott"
+					},
+					"4": {
+						"name": "variable.ott"
+					},
+					"5": {
+						"name": "variable.ott"
+					}
+
+				}
+			}]
+		},
+		"binddecl": {
+			"patterns": [{
+				"name": "keyword",
+				"match": "\\(\\+\\s*(bind)\\s+((?!(\\+\\)))(.*))\\s+in\\s+((?!(\\+\\)))(.*))\\+\\)",
+				"captures": {
+
+					"1": {
+						"name": "keyword.ott"
+					},
+					"2": {
+						"name": "keyword.ott"
+					},
+					"3": {
+						"name": "entity.name.function.ott"
+					},
+					"4": {
+						"name": "entity.name.function.ott"
+					},
+					"5": {
+						"name": "entity.name.function.ott"
+					}
+
+				}
+			}]
+		},
+		"bindgroup": {
+			"patterns": [{
+				"match": "(\\(\\+)((?!((\\+\\))|(\\=)|(union)))(.*))\\s(\\=)\\s((?!((\\+\\))|(\\=)|(union)))(.*))(\\s(union)\\s(?!((\\+\\))|(\\=)|(union)))(.*))(\\+\\))",
+				"captures": {
+
+					"7": {
+						"name": "entity.name.function.ott"
+					},
+					"16": {
+						"name": "keyword.ott"
+					},
+					"1": {
+						"name": "keyword.ott"
+					},
+					"8": {
+						"name": "keyword.ott"
+					},
+					"22": {
+						"name": "keyword.ott"
+					}
+
+				}
+			}]
+		},
+		"strings": {
+			"patterns": [{
+				"name": "string.quoted.double.ott",
+				"begin": "\"",
+				"end": "\"",
+				"patterns": [{
+					"name": "constant.character.escape.ott",
+					"match": "\\\\."
+				}]
+			}]
+		}
+	},
+	"scopeName": "source.ott"
+}

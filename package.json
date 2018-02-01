@@ -1,0 +1,43 @@
+{
+    "name": "ott",
+    "displayName": "ott",
+    "description": "Ott formatting, typechecking, and syntax highlighting",
+    "version": "0.0.1",
+    "publisher": "JoeyEremondi",
+    "engines": {
+        "vscode": "^1.19.0"
+    },
+    "categories": [
+        "Other"
+    ],
+    "activationEvents": [
+        "onLanguage:ott"
+    ],
+    "main": "./out/extension",
+    "contributes": {
+        "languages": [{
+            "id": "ott",
+            "aliases": ["Ott", "ott"],
+            "extensions": [".ott"],
+            "configuration": "./language-configuration.json"
+        }],
+        "grammars": [{
+            "language": "ott",
+            "scopeName": "source.ott",
+            "path": "./syntaxes/ott.tmLanguage.json"
+        }]
+    },
+    "scripts": {
+        "vscode:prepublish": "npm run compile",
+        "compile": "tsc -p ./",
+        "watch": "tsc -watch -p ./",
+        "postinstall": "node ./node_modules/vscode/bin/install",
+        "test": "npm run compile && node ./node_modules/vscode/bin/test"
+    },
+    "devDependencies": {
+        "typescript": "^2.6.1",
+        "vscode": "^1.1.6",
+        "@types/node": "^7.0.43",
+        "@types/mocha": "^2.2.42"
+    }
+}
