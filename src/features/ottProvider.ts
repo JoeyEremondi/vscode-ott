@@ -98,7 +98,7 @@ export class OttLintingProvider {
     }
 }
 
-interface METVARDEFN { kind: "metvardefn" }
+interface METAVARDEFN { kind: "metavardefn"; lhs: string; rhs: string; }
 interface RULES { kind: "rules" }
 interface DEFNCLASS { kind: "defnclass" }
 interface FUNDEFNCLASS { kind: "fundefnclass" }
@@ -112,8 +112,9 @@ interface HOMS { kind: "homs" }
 interface COQSECTIONBEGIN { kind: "coqsectionbegin" }
 interface COQSECTIONEND { kind: "coqsectionend" }
 interface COQVARIABLE { kind: "coqvariable" }
+interface GENERICITEM { kind: "genericitem", data: string }
 
-type Item = METVARDEFN
+type Item = METAVARDEFN
     | RULES
     | DEFNCLASS
     | FUNDEFNCLASS
@@ -126,7 +127,8 @@ type Item = METVARDEFN
     | HOMS
     | COQSECTIONBEGIN
     | COQSECTIONEND
-    | COQVARIABLE;
+    | COQVARIABLE
+    | GENERICITEM;
 
 export class OttFormatter {
     public static ottFormatter: vscode.DocumentFormattingEditProvider = {
@@ -144,25 +146,41 @@ export class OttFormatter {
 
     private static parseItems(document: string): Item[] {
 
-        let tagsRE = "grammar|metavar|indexvar|embed|subrules|substitutions|freevars|defns";
-        let tags = tagsRE.split("|");
+        let tagsString = "grammar|metavar|indexvar|embed|subrules|substitutions|freevars|defns";
+        let tags = tagsString.split("|");
         let initialComments = [];
-        let items = document.split(new RegExp(tagsRE));
-        console.log(items);
+        let tagsRE = new RegExp(`(${tagsString})`);
+        let items = document.split(tagsRE);
+        // console.log(items);
         if (tags.indexOf(items[0]) <= -1) {
             initialComments.push(items.shift());
         }
-        let ret = []
+        let pairs = [];
         //Iterate through every  tag-item pair
-        for (var i = 0; i < items.length; i += 2) {
-            let itemStr = items[i] + items[i + 1];
-            console.log(itemStr);
+        var i = 0;
+        for (i = 0; i < items.length; i += 2) {
+            pairs.push([items[i], items[i + 1]]);
         }
+        let result = pairs.map(this.parseItem);
+        console.log(result);
         return null;
     }
 
-    private static parseItem(document: string): Item {
-        return null;
+    private static parseItem(pair: [string, string]): Item {
+        let [tag, rest] = pair;
+        let str = tag + rest;
+        switch (tag) {
+
+            case "metavar":
+            case "indexvar":
+                let parts = str.split(/((indexvar|metavar)\s*([a-zA-z_]+)(\s*,\s*[a-zA-z_]+)*\s*::=)/i);
+                let rhs = parts.pop();
+                let lhs = parts.join("");
+                return { kind: "metavardefn", lhs: parts[1], rhs: rhs };
+
+            default:
+                return { kind: "genericitem", data: str };
+        }
     }
 
 
