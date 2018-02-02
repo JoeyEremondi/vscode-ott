@@ -8,7 +8,7 @@ import ChildProcess = cp.ChildProcess;
 
 import * as vscode from 'vscode';
 
-export default class OttLintingProvider {
+export class OttLintingProvider {
 
     private diagnosticCollection: vscode.DiagnosticCollection;
 
@@ -28,7 +28,7 @@ export default class OttLintingProvider {
                 decoded += data;
             });
             childProcess.stdout.on('end', () => {
-                console.log(decoded);
+                // console.log(decoded);
                 decoded.split("\n").forEach(item => {
                     let severity = item.startsWith("warning") ? vscode.DiagnosticSeverity.Warning : vscode.DiagnosticSeverity.Error;
                     let re = /((warning|error): )?(.*) at file (.*) line (\d+) char (\d+) - (\d+)/i;
@@ -98,3 +98,72 @@ export default class OttLintingProvider {
     }
 }
 
+interface METVARDEFN { kind: "metvardefn" }
+interface RULES { kind: "rules" }
+interface DEFNCLASS { kind: "defnclass" }
+interface FUNDEFNCLASS { kind: "fundefnclass" }
+interface SUBRULES { kind: "subrules" }
+interface CONTEXTRULES { kind: "contextrules" }
+interface SUBSTITUTIONS { kind: "substitutions" }
+interface FREEVARS { kind: "freevars" }
+interface EMBED { kind: "embed" }
+interface PARSING { kind: "parsing" }
+interface HOMS { kind: "homs" }
+interface COQSECTIONBEGIN { kind: "coqsectionbegin" }
+interface COQSECTIONEND { kind: "coqsectionend" }
+interface COQVARIABLE { kind: "coqvariable" }
+
+type Item = METVARDEFN
+    | RULES
+    | DEFNCLASS
+    | FUNDEFNCLASS
+    | SUBRULES
+    | CONTEXTRULES
+    | SUBSTITUTIONS
+    | FREEVARS
+    | EMBED
+    | PARSING
+    | HOMS
+    | COQSECTIONBEGIN
+    | COQSECTIONEND
+    | COQVARIABLE;
+
+export class OttFormatter {
+    public static ottFormatter: vscode.DocumentFormattingEditProvider = {
+        provideDocumentFormattingEdits(document: vscode.TextDocument): vscode.TextEdit[] {
+
+            console.log("Parse data:")
+            OttFormatter.parseItems(document.getText().toString());
+
+            const firstLine = document.lineAt(0);
+            if (firstLine.text !== '%42') {
+                return [vscode.TextEdit.insert(firstLine.range.start, '%42\n')];
+            }
+        }
+    }
+
+    private static parseItems(document: string): Item[] {
+
+        let tagsRE = "grammar|metavar|indexvar|embed|subrules|substitutions|freevars|defns";
+        let tags = tagsRE.split("|");
+        let initialComments = [];
+        let items = document.split(new RegExp(tagsRE));
+        console.log(items);
+        if (tags.indexOf(items[0]) <= -1) {
+            initialComments.push(items.shift());
+        }
+        let ret = []
+        //Iterate through every  tag-item pair
+        for (var i = 0; i < items.length; i += 2) {
+            let itemStr = items[i] + items[i + 1];
+            console.log(itemStr);
+        }
+        return null;
+    }
+
+    private static parseItem(document: string): Item {
+        return null;
+    }
+
+
+}
