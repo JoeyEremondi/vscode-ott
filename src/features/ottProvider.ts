@@ -47,10 +47,12 @@ export class OttLintingProvider {
                 let re1 = /((warning|error): )?([\s\S]*) at file ([\s\S]*) line (\d+) char (\d+) - (\d+)/i;
                 let re2 = /Parse error:.*line=([\-]?\d+)\s*char=([\-]?\d+)/i;
                 let re3 = /no parses of (.*) at file.*line\s*(\d+)\s*-\s*(\d+):\s*\nno parses \(char (\d+)\):(.*)/i;
+                let re3b = /multiple parses of (.*) at file.*line\s*(\d+)\s*-\s*(\d+)/i;
                 let re4 = /.*(warning:|error:|(=?(no parses)))([\s\S]*)/i;
                 let match1 = item.match(re1);
                 let match2 = item.match(re2);
                 let match3 = item.match(re3);
+                let match3b = item.match(re3b);
                 let match4 = item.match(re4);
                 if (match1 != null) {
                     let message = match1[3];
@@ -82,6 +84,13 @@ export class OttLintingProvider {
                     range = new vscode.Range(parseInt(match3[2]) - 1, parseInt(match3[4]),
                         parseInt(match3[3]) - 1, 0);
                     diagnostic = new vscode.Diagnostic(range, message, vscode.DiagnosticSeverity.Information);
+                    diagnostics.push(diagnostic);
+                } else if (match3b != null) {
+                    console.log("match3")
+                    let message = "Multiple parses for: " + match3b[1];
+                    let range = new vscode.Range(parseInt(match3b[2]) - 1, 0,
+                        parseInt(match3b[3]) - 1, 0);
+                    let diagnostic = new vscode.Diagnostic(range, message, vscode.DiagnosticSeverity.Warning);
                     diagnostics.push(diagnostic);
                 } else if (match4 != null) {
                     console.log("match4")
