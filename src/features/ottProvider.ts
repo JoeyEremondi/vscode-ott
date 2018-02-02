@@ -31,7 +31,7 @@ export class OttLintingProvider {
             magicCommentArgs = magicCommentArgs.concat(magicCommentMatch[1].split(/\s/i));
         }
 
-        let args = [textDocument.fileName].concat(magicCommentArgs);
+        let args = [textDocument.fileName, "-colour=false"].concat(magicCommentArgs);
 
         let childProcess = cp.spawn('ott', args, options);
         if (childProcess.pid) {
@@ -42,14 +42,16 @@ export class OttLintingProvider {
                 stderrData += data;
             });
             let doMatches = diagnostics => item => {
-                // console.log("ITEM " + item + " \n")
-                let severity = item.startsWith("warning") ? vscode.DiagnosticSeverity.Warning : vscode.DiagnosticSeverity.Error;
+                console.log("ITEM " + item + " \n")
+                let severity = item.match(/(warning|no parse)/i) != null ? vscode.DiagnosticSeverity.Warning : vscode.DiagnosticSeverity.Error;
                 let re1 = /((warning|error): )?([\s\S]*) at file ([\s\S]*) line (\d+) char (\d+) - (\d+)/i;
                 let re2 = /Parse error:.*line=([\-]?\d+)\s*char=([\-]?\d+)/i;
-                let re3 = /.*(warning|error):([\s\S]*)/i;
+                let re3 = /no parses of (.*) at file.*line\s*(\d+)\s*-\s*(\d+):\s*\nno parses \(char (\d+)\):(.*)/i;
+                let re4 = /.*(warning:|error:|(=?(no parses)))([\s\S]*)/i;
                 let match1 = item.match(re1);
                 let match2 = item.match(re2);
                 let match3 = item.match(re3);
+                let match4 = item.match(re4);
                 if (match1 != null) {
                     let message = match1[3];
                     let range = new vscode.Range(parseInt(match1[5]) - 1, parseInt(match1[6]),
@@ -71,22 +73,34 @@ export class OttLintingProvider {
                     diagnostics.push(diagnostic);
                 } else if (match3 != null) {
                     console.log("match3")
-                    let message = match3[2];
+                    let message = "No parse for:" + match3[5];
+                    let range = new vscode.Range(parseInt(match3[2]) - 1, 0,
+                        parseInt(match3[2]) - 1, parseInt(match3[4]));
+                    let diagnostic = new vscode.Diagnostic(range, message, vscode.DiagnosticSeverity.Error);
+                    diagnostics.push(diagnostic);
+                    message = "Parse problem noticed here";
+                    range = new vscode.Range(parseInt(match3[2]) - 1, parseInt(match3[4]),
+                        parseInt(match3[3]) - 1, 0);
+                    diagnostic = new vscode.Diagnostic(range, message, vscode.DiagnosticSeverity.Information);
+                    diagnostics.push(diagnostic);
+                } else if (match4 != null) {
+                    console.log("match4")
+                    let message = item;
                     let range = new vscode.Range(0, 0, 0, 1);
                     let diagnostic = new vscode.Diagnostic(range, message, severity);
                     diagnostics.push(diagnostic);
                 }
             }
-            childProcess.stdout.on('end', () => {
-                // console.log("STDOUT: " + stdoutData);
-                stdoutData.split(/(?=error|warning)/i).forEach(doMatches(diagnostics));
+            let handleStream = (streamString: string) => () => {
+                let stream = (streamString == "STDOUT" ? stdoutData : stderrData)
+                stream = stream.split("\n").slice(1).join("\n");
+                console.log("STDOUT: " + stream);
+                stream.split(/(?=^error|warning|no parses of|multiple parses of)/i).forEach(doMatches(diagnostics));
                 this.diagnosticCollection.set(textDocument.uri, diagnostics);
-            });
-            childProcess.stderr.on('end', () => {
-                // console.log("STDERR: " + stderrData);
-                stderrData.split(/(?=error|warning)/i).forEach(doMatches(diagnostics));
-                this.diagnosticCollection.set(textDocument.uri, diagnostics);
-            });
+            }
+            childProcess.stdout.on('end', handleStream("STDOUT"));
+            childProcess.stderr.on('end', handleStream("STDERR"));
+
         }
     }
 
