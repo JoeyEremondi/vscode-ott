@@ -23,7 +23,18 @@ export class OttLintingProvider {
 
         let options = vscode.workspace.rootPath ? { cwd: vscode.workspace.rootPath } : undefined;
 
-        let childProcess = cp.spawn('ott', [textDocument.fileName], options);
+        let magicCommentArgs = [];
+        let firstLine = textDocument.getText().toString().split("\n")[0];
+        console.log(firstLine);
+        let magicCommentMatch = firstLine.match(/%\s+!Ott\s+args\s*=\s*\"(.*)\"/i);
+        if (magicCommentMatch != null) {
+            magicCommentArgs.concat(magicCommentMatch[1].split(/\s/i));
+        }
+
+        let args = [textDocument.fileName].concat(magicCommentArgs);
+        console.log("Calling Ott with args " + args)
+
+        let childProcess = cp.spawn('ott', args, options);
         if (childProcess.pid) {
             childProcess.stdout.on('data', (data: Buffer) => {
                 stdoutData += data;
@@ -32,10 +43,11 @@ export class OttLintingProvider {
                 stderrData += data;
             });
             let doMatches = diagnostics => item => {
+                // console.log("ITEM " + item + " \n")
                 let severity = item.startsWith("warning") ? vscode.DiagnosticSeverity.Warning : vscode.DiagnosticSeverity.Error;
-                let re1 = /((warning|error): )?(.*) at file (.*) line (\d+) char (\d+) - (\d+)/i;
+                let re1 = /((warning|error): )?([\s\S]*) at file ([\s\S]*) line (\d+) char (\d+) - (\d+)/i;
                 let re2 = /Parse error:.*line=([\-]?\d+)\s*char=([\-]?\d+)/i;
-                let re3 = /.*(warning|error):.*file.*line^[\d]*(\d+)^[\d]*char^[\d]*(\d+)^[\d]*/i;
+                let re3 = /.*(warning|error):([\s\S]*)/i;
                 let match1 = item.match(re1);
                 let match2 = item.match(re2);
                 let match3 = item.match(re3);
@@ -52,29 +64,28 @@ export class OttLintingProvider {
                     if (parseInt(match2[1]) - 1 < 1) {
                         range = new vscode.Range(0, 0, 0, 1);
                     } else {
-                    range = new vscode.Range(parseInt(match2[1]) - 1, parseInt(match2[2]),
-                        parseInt(match2[1]) - 1, parseInt(match2[2]) + 1);
+                        range = new vscode.Range(parseInt(match2[1]) - 1, parseInt(match2[2]),
+                            parseInt(match2[1]) - 1, parseInt(match2[2]) + 1);
                     }
-                    
+
                     let diagnostic = new vscode.Diagnostic(range, message, severity);
                     diagnostics.push(diagnostic);
                 } else if (match3 != null) {
-                    console.log("match2")
-                    let message = item;
-                    let range = new vscode.Range(parseInt(match2[2]) - 1, parseInt(match2[3]),
-                        parseInt(match2[2]) - 1, parseInt(match2[3]) + 1);
+                    console.log("match3")
+                    let message = match3[2];
+                    let range = new vscode.Range(0, 0, 0, 1);
                     let diagnostic = new vscode.Diagnostic(range, message, severity);
                     diagnostics.push(diagnostic);
                 }
             }
             childProcess.stdout.on('end', () => {
-                console.log(stdoutData);
-                stdoutData.split("\n").forEach(doMatches(diagnostics));
+                // console.log("STDOUT: " + stdoutData);
+                stdoutData.split(/(?=error|warning)/i).forEach(doMatches(diagnostics));
                 this.diagnosticCollection.set(textDocument.uri, diagnostics);
             });
             childProcess.stderr.on('end', () => {
-                // console.log(decoded);
-                stderrData.split("\n").forEach(doMatches(diagnostics));
+                // console.log("STDERR: " + stderrData);
+                stderrData.split(/(?=error|warning)/i).forEach(doMatches(diagnostics));
                 this.diagnosticCollection.set(textDocument.uri, diagnostics);
             });
         }
