@@ -17,7 +17,8 @@ export class OttLintingProvider {
             return;
         }
 
-        let decoded = ''
+        let stdoutData = ''
+        let stderrData = ''
         let diagnostics: vscode.Diagnostic[] = [];
 
         let options = vscode.workspace.rootPath ? { cwd: vscode.workspace.rootPath } : undefined;
@@ -25,22 +26,31 @@ export class OttLintingProvider {
         let childProcess = cp.spawn('ott', [textDocument.fileName], options);
         if (childProcess.pid) {
             childProcess.stdout.on('data', (data: Buffer) => {
-                decoded += data;
+                stdoutData += data;
             });
+            childProcess.stderr.on('data', (data: Buffer) => {
+                stderrData += data;
+            });
+            let doMatches = diagnostics => item => {
+                let severity = item.startsWith("warning") ? vscode.DiagnosticSeverity.Warning : vscode.DiagnosticSeverity.Error;
+                let re = /((warning|error): )?(.*) at file (.*) line (\d+) char (\d+) - (\d+)/i;
+                let match = item.match(re);
+                if (match != null) {
+                    let message = match[3];
+                    let range = new vscode.Range(parseInt(match[5]) - 1, parseInt(match[6]),
+                        parseInt(match[5]) - 1, parseInt(match[7]));
+                    let diagnostic = new vscode.Diagnostic(range, message, severity);
+                    diagnostics.push(diagnostic);
+                }
+            }
             childProcess.stdout.on('end', () => {
                 // console.log(decoded);
-                decoded.split("\n").forEach(item => {
-                    let severity = item.startsWith("warning") ? vscode.DiagnosticSeverity.Warning : vscode.DiagnosticSeverity.Error;
-                    let re = /((warning|error): )?(.*) at file (.*) line (\d+) char (\d+) - (\d+)/i;
-                    let match = item.match(re);
-                    if (match != null) {
-                        let message = match[3];
-                        let range = new vscode.Range(parseInt(match[5]) - 1, parseInt(match[6]),
-                            parseInt(match[5]) - 1, parseInt(match[7]));
-                        let diagnostic = new vscode.Diagnostic(range, message, severity);
-                        diagnostics.push(diagnostic);
-                    }
-                });
+                stdoutData.split("\n").forEach(doMatches(diagnostics));
+                this.diagnosticCollection.set(textDocument.uri, diagnostics);
+            });
+            childProcess.stderr.on('end', () => {
+                // console.log(decoded);
+                stderrData.split("\n").forEach(doMatches(diagnostics));
                 this.diagnosticCollection.set(textDocument.uri, diagnostics);
             });
         }
