@@ -33,18 +33,42 @@ export class OttLintingProvider {
             });
             let doMatches = diagnostics => item => {
                 let severity = item.startsWith("warning") ? vscode.DiagnosticSeverity.Warning : vscode.DiagnosticSeverity.Error;
-                let re = /((warning|error): )?(.*) at file (.*) line (\d+) char (\d+) - (\d+)/i;
-                let match = item.match(re);
-                if (match != null) {
-                    let message = match[3];
-                    let range = new vscode.Range(parseInt(match[5]) - 1, parseInt(match[6]),
-                        parseInt(match[5]) - 1, parseInt(match[7]));
+                let re1 = /((warning|error): )?(.*) at file (.*) line (\d+) char (\d+) - (\d+)/i;
+                let re2 = /Parse error:.*line=([\-]?\d+)\s*char=([\-]?\d+)/i;
+                let re3 = /.*(warning|error):.*file.*line^[\d]*(\d+)^[\d]*char^[\d]*(\d+)^[\d]*/i;
+                let match1 = item.match(re1);
+                let match2 = item.match(re2);
+                let match3 = item.match(re3);
+                if (match1 != null) {
+                    let message = match1[3];
+                    let range = new vscode.Range(parseInt(match1[5]) - 1, parseInt(match1[6]),
+                        parseInt(match1[5]) - 1, parseInt(match1[7]));
+                    let diagnostic = new vscode.Diagnostic(range, message, severity);
+                    diagnostics.push(diagnostic);
+                } else if (match2 != null) {
+                    console.log("match2")
+                    let message = "Syntax error";
+                    let range = null;
+                    if (parseInt(match2[1]) - 1 < 1) {
+                        range = new vscode.Range(0, 0, 0, 1);
+                    } else {
+                    range = new vscode.Range(parseInt(match2[1]) - 1, parseInt(match2[2]),
+                        parseInt(match2[1]) - 1, parseInt(match2[2]) + 1);
+                    }
+                    
+                    let diagnostic = new vscode.Diagnostic(range, message, severity);
+                    diagnostics.push(diagnostic);
+                } else if (match3 != null) {
+                    console.log("match2")
+                    let message = item;
+                    let range = new vscode.Range(parseInt(match2[2]) - 1, parseInt(match2[3]),
+                        parseInt(match2[2]) - 1, parseInt(match2[3]) + 1);
                     let diagnostic = new vscode.Diagnostic(range, message, severity);
                     diagnostics.push(diagnostic);
                 }
             }
             childProcess.stdout.on('end', () => {
-                // console.log(decoded);
+                console.log(stdoutData);
                 stdoutData.split("\n").forEach(doMatches(diagnostics));
                 this.diagnosticCollection.set(textDocument.uri, diagnostics);
             });
