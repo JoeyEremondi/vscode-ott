@@ -1,65 +1,67 @@
-# ott README
+# ott-vscode
 
-This is the README for your extension "ott". After writing up a brief description, we recommend including the following sections.
+Provides syntax highlighting and inline error reporting 
+for the [Ott semantics tool](http://www.cl.cam.ac.uk/~pes20/ott/).
 
 ## Features
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
+### Syntax Highlighting 
 
-For example if there is an image subfolder under your extension project workspace:
+The emphasis is on visually distinguishing the meta-language from the language being modeled.
+As a result, the files end up quite colorful.
 
-\!\[feature X\]\(images/feature-x.png\)
+I've optimized this for the One Dark Pro theme, but it should look okay with any theme. Some
+classes might not get distinguished if your theme doesn't define colors for enough scopes, though.
 
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
+I'm no expert when it comes to visual design, so pull-requests are welcome with regards
+to the color choices.
+
+### Inline Error Reporting
+
+When you save your file, it will be run with `ott` and any errors will be reported inline. 
+
+By default, `ott` is run with no arguments. However, if the first line of your file contains a magic comment of the form:
+
+```% !Ott args = "ARGS"``` 
+
+Then, Ott will be run with whatever args are given. This is useful for re-generating
+LaTeX or proof-assistant code automatically when you save.
 
 ## Requirements
 
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
+The command `ott` must be installed and on your `$PATH`.
+
+Syntax highlighting recognizes some languages within the `hom` blocks,
+if you have a language pack installed for that language.
+Reccomended packages to allow this are:
+
+* [VSCoq](https://marketplace.visualstudio.com/items?itemName=siegebell.vscoq) or [Coq](https://marketplace.visualstudio.com/items?itemName=ruoz.coq)
+* [Isabelle](https://marketplace.visualstudio.com/items?itemName=makarius.isabelle)
+* [LaTeX Workshop](https://marketplace.visualstudio.com/items?itemName=James-Yu.latex-workshop) or [LaTeX Language Support](https://marketplace.visualstudio.com/items?itemName=torn4dom4n.latex-support)
 
 ## Extension Settings
 
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
-
-For example:
-
-This extension contributes the following settings:
-
-* `myExtension.enable`: enable/disable this extension
-* `myExtension.thing`: set to `blah` to do something
+None so far.
 
 ## Known Issues
 
-Calling out known issues can help limit users opening duplicate issues against your extension.
+* No option to specify `ott` binary location
+* Check-on-save always on, should be optional
+* Not all errors have location (requires changes to Ott to fix)
+* Error parsing is hacky, so some errors may not be reported
+
+## Future features
+
+- [ ] Source-code formatting
+- [ ] Inline unicode replacement, something like [prettify-symbols-mode](https://marketplace.visualstudio.com/items?itemName=siegebell.prettify-symbols-mode). 
+
+## Contributing
+
+Contributions are welcome and encouraged! Feel free to leave any issues or submit pull requests.
+Alternately, if you would like to collaborate, I will happily add collaborators to the repo.
 
 ## Release Notes
 
-Users appreciate release notes as you update your extension.
+### 0.0.1
 
-### 1.0.0
-
-Initial release of ...
-
-### 1.0.1
-
-Fixed issue #.
-
-### 1.1.0
-
-Added features X, Y, and Z.
-
------------------------------------------------------------------------------------------------------------
-
-## Working with Markdown
-
-**Note:** You can author your README using Visual Studio Code.  Here are some useful editor keyboard shortcuts:
-
-* Split the editor (`Cmd+\` on OSX or `Ctrl+\` on Windows and Linux)
-* Toggle preview (`Shift+CMD+V` on OSX or `Shift+Ctrl+V` on Windows and Linux)
-* Press `Ctrl+Space` (Windows, Linux) or `Cmd+Space` (OSX) to see a list of Markdown snippets
-
-### For more information
-
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
-
-**Enjoy!**
+Initial release
