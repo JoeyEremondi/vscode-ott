@@ -42,7 +42,7 @@ export class OttLintingProvider {
                 stderrData += data;
             });
             let doMatches = diagnostics => item => {
-                console.log("ITEM " + item + " \n")
+                // console.log("ITEM " + item + " \n")
                 let severity = item.match(/(warning|no parse)/i) != null ? vscode.DiagnosticSeverity.Warning : vscode.DiagnosticSeverity.Error;
                 let re1 = /((warning|error): )?([\s\S]*) at file ([\s\S]*) line (\d+) char (\d+) - (\d+)/i;
                 let re2 = /Parse error:.*line=([\-]?\d+)\s*char=([\-]?\d+)/i;
@@ -61,7 +61,7 @@ export class OttLintingProvider {
                     let diagnostic = new vscode.Diagnostic(range, message, severity);
                     diagnostics.push(diagnostic);
                 } else if (match2 != null) {
-                    console.log("match2")
+                    // console.log("match2")
                     let message = "Syntax error";
                     let range = null;
                     if (parseInt(match2[1]) - 1 < 1) {
@@ -74,7 +74,7 @@ export class OttLintingProvider {
                     let diagnostic = new vscode.Diagnostic(range, message, severity);
                     diagnostics.push(diagnostic);
                 } else if (match3 != null) {
-                    console.log("match3")
+                    // console.log("match3")
                     let message = "No parse for:" + match3[5];
                     let range = new vscode.Range(parseInt(match3[2]) - 1, 0,
                         parseInt(match3[2]) - 1, parseInt(match3[4]));
@@ -86,14 +86,14 @@ export class OttLintingProvider {
                     diagnostic = new vscode.Diagnostic(range, message, vscode.DiagnosticSeverity.Information);
                     diagnostics.push(diagnostic);
                 } else if (match3b != null) {
-                    console.log("match3")
+                    // console.log("match3")
                     let message = "Multiple parses for: " + match3b[1];
                     let range = new vscode.Range(parseInt(match3b[2]) - 1, 0,
                         parseInt(match3b[3]) - 1, 0);
                     let diagnostic = new vscode.Diagnostic(range, message, vscode.DiagnosticSeverity.Warning);
                     diagnostics.push(diagnostic);
                 } else if (match4 != null) {
-                    console.log("match4")
+                    // console.log("match4")
                     let message = item;
                     let range = new vscode.Range(0, 0, 0, 1);
                     let diagnostic = new vscode.Diagnostic(range, message, severity);
@@ -103,7 +103,7 @@ export class OttLintingProvider {
             let handleStream = (streamString: string) => () => {
                 let stream = (streamString == "STDOUT" ? stdoutData : stderrData)
                 stream = stream.split("\n").slice(1).join("\n");
-                console.log("STDOUT: " + stream);
+                // console.log("STDOUT: " + stream);
                 stream.split(/(?=^error|warning|no parses of|multiple parses of)/i).forEach(doMatches(diagnostics));
                 this.diagnosticCollection.set(textDocument.uri, diagnostics);
             }
