@@ -4,6 +4,7 @@
     "description": "Ott formatting, typechecking, and syntax highlighting",
     "version": "0.0.1",
     "publisher": "JoeyEremondi",
+    "repository": "https://github.com/JoeyEremondi/vscode-ott",
     "engines": {
         "vscode": "^1.19.0"
     },
