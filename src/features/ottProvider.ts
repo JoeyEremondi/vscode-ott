@@ -25,14 +25,13 @@ export class OttLintingProvider {
 
         let magicCommentArgs = [];
         let firstLine = textDocument.getText().toString().split("\n")[0];
-        console.log(firstLine);
         let magicCommentMatch = firstLine.match(/%\s+!Ott\s+args\s*=\s*\"(.*)\"/i);
         if (magicCommentMatch != null) {
-            magicCommentArgs.concat(magicCommentMatch[1].split(/\s/i));
+            console.log("Magic comment detected with arguments " + magicCommentMatch[1])
+            magicCommentArgs = magicCommentArgs.concat(magicCommentMatch[1].split(/\s/i));
         }
 
         let args = [textDocument.fileName].concat(magicCommentArgs);
-        console.log("Calling Ott with args " + args)
 
         let childProcess = cp.spawn('ott', args, options);
         if (childProcess.pid) {
