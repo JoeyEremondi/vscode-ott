@@ -8,6 +8,19 @@ import ChildProcess = cp.ChildProcess;
 
 import * as vscode from 'vscode';
 
+/*
+warning:
+warning: warning:
+error: (in checking and disambiguating quotiented syntax)
+Parse error:
+Ott version:
+Definition rules:        18 good    0 bad
+Definition rule clauses: 39 good    0 bad
+Lexing error
+no parses of ... lines \d+ - \d+
+no parses (char \d+)
+*/
+
 export class OttLintingProvider {
 
     private diagnosticCollection: vscode.DiagnosticCollection;
@@ -42,69 +55,66 @@ export class OttLintingProvider {
                 stderrData += data;
             });
             let doMatches = diagnostics => item => {
-                // console.log("ITEM " + item + " \n")
+                console.log("ITEM " + item + " .");
+                let match = null;
+                let range = new vscode.Range(0, 0, 0, 1);
                 let severity = item.match(/(warning|no parse)/i) != null ? vscode.DiagnosticSeverity.Warning : vscode.DiagnosticSeverity.Error;
-                let re1 = /((warning|error): )?([\s\S]*) at file ([\s\S]*) line (\d+) char (\d+) - (\d+)/i;
-                let re2 = /Parse error:.*line=([\-]?\d+)\s*char=([\-]?\d+)/i;
-                let re3 = /no parses of (.*) at file.*line\s*(\d+)\s*-\s*(\d+):\s*\nno parses \(char (\d+)\):(.*)/i;
-                let re3b = /multiple parses of (.*) at file.*line\s*(\d+)\s*-\s*(\d+)/i;
-                let re4 = /.*(warning:|error:|(=?(no parses)))([\s\S]*)/i;
-                let match1 = item.match(re1);
-                let match2 = item.match(re2);
-                let match3 = item.match(re3);
-                let match3b = item.match(re3b);
-                let match4 = item.match(re4);
-                if (match1 != null) {
-                    let message = match1[3];
-                    let range = new vscode.Range(parseInt(match1[5]) - 1, parseInt(match1[6]),
-                        parseInt(match1[5]) - 1, parseInt(match1[7]));
-                    let diagnostic = new vscode.Diagnostic(range, message, severity);
-                    diagnostics.push(diagnostic);
-                } else if (match2 != null) {
-                    // console.log("match2")
-                    let message = "Syntax error";
-                    let range = null;
-                    if (parseInt(match2[1]) - 1 < 1) {
-                        range = new vscode.Range(0, 0, 0, 1);
-                    } else {
-                        range = new vscode.Range(parseInt(match2[1]) - 1, parseInt(match2[2]),
-                            parseInt(match2[1]) - 1, parseInt(match2[2]) + 1);
-                    }
+                let message = "";
 
-                    let diagnostic = new vscode.Diagnostic(range, message, severity);
-                    diagnostics.push(diagnostic);
-                } else if (match3 != null) {
-                    // console.log("match3")
-                    let message = "No parse for:" + match3[5];
-                    let range = new vscode.Range(parseInt(match3[2]) - 1, 0,
-                        parseInt(match3[2]) - 1, parseInt(match3[4]));
-                    let diagnostic = new vscode.Diagnostic(range, message, vscode.DiagnosticSeverity.Error);
-                    diagnostics.push(diagnostic);
-                    message = "Parse problem noticed here";
-                    range = new vscode.Range(parseInt(match3[2]) - 1, parseInt(match3[4]),
-                        parseInt(match3[3]) - 1, 0);
-                    diagnostic = new vscode.Diagnostic(range, message, vscode.DiagnosticSeverity.Information);
-                    diagnostics.push(diagnostic);
-                } else if (match3b != null) {
-                    // console.log("match3")
-                    let message = "Multiple parses for: " + match3b[1];
-                    let range = new vscode.Range(parseInt(match3b[2]) - 1, 0,
-                        parseInt(match3b[3]) - 1, 0);
-                    let diagnostic = new vscode.Diagnostic(range, message, vscode.DiagnosticSeverity.Warning);
-                    diagnostics.push(diagnostic);
-                } else if (match4 != null) {
-                    // console.log("match4")
-                    let message = item;
-                    let range = new vscode.Range(0, 0, 0, 1);
-                    let diagnostic = new vscode.Diagnostic(range, message, severity);
-                    diagnostics.push(diagnostic);
+                if (match = item.match(/error:([\s\S]*) at file [\s\S]* line (\d+) char (\d+) - (\d+)/i)) {
+                    message = match[1];
+                    range = new vscode.Range(parseInt(match[2]) - 1, parseInt(match[3]),
+                        parseInt(match[2]) - 1, parseInt(match[4]));
+                    severity = vscode.DiagnosticSeverity.Error;
                 }
+                else if (match = item.match(/Lexing error\s*(.*)\s*file=[\S]*\s+line=(\d+)\s+char=(\d+)/i)) {
+                    message = "Lexing error. (Maybe '}}}' is missing space in a tex hom?)";
+                    if (parseInt(match[2]) - 1 < 1) {
+                        range = new vscode.Range(parseInt(match[2]) - 1, parseInt(match[3]),
+                            parseInt(match[2]) - 1, parseInt(match[3]));
+                    }
+                    severity = vscode.DiagnosticSeverity.Error
+                }
+                else if (match = item.match(/Parse error:\s*(.*)\s*file=[\S]*\s+line=(\d+)\s+char=(\d+)/i)) {
+                    message = match[1];
+                    if (parseInt(match[2]) - 1 < 1) {
+                        range = new vscode.Range(parseInt(match[2]) - 1, parseInt(match[3]),
+                            parseInt(match[2]) - 1, parseInt(match[3]));
+                    }
+                    severity = vscode.DiagnosticSeverity.Error
+                }
+                else if (match = item.match(/no parses of (.*) at file.*line\s*(\d+)\s*-\s*(\d+):.*no parses \(char (\d+)\):/i)) {
+                    message = "Parse problem noticed here";
+                    range = new vscode.Range(parseInt(match[2]) - 1, parseInt(match[4]),
+                        parseInt(match[3]) - 1, 0);
+                    diagnostics.push(new vscode.Diagnostic(range, message, vscode.DiagnosticSeverity.Information));
+                    message = "No parse for:" + match[5];
+                    range = new vscode.Range(parseInt(match[2]) - 1, 0,
+                        parseInt(match[2]) - 1, parseInt(match[4]));
+                    severity = vscode.DiagnosticSeverity.Error
+                }
+                else if (match = item.match(/Fatal error: exception Failure\(\"(.*)\"\)/i)) {
+                    message = "Fatal error, exception thrown: " + match[1];
+                }
+                //Catch-all for remaining errors and warnings 
+                else if (match = item.match(/(warning|error):?(.*)/i)) {
+                    message = match[2];
+                }
+                else {
+                    return;
+                }
+
+                let diagnostic = new vscode.Diagnostic(range, message, severity);
+                diagnostics.push(diagnostic);
             }
             let handleStream = (streamString: string) => () => {
                 let stream = (streamString == "STDOUT" ? stdoutData : stderrData)
-                stream = stream.split("\n").slice(1).join("\n");
+                //Replace annoying multi-line errors
+                stream = stream.replace(/error:\s*(\(in checking and disambiguating quotiented syntax\))?\s*\n/i, "error: ")
+                stream = stream.replace("\nno parses (", " -- no parses (")
+                console.log("STREAM:\n" + stream)
                 // console.log("STDOUT: " + stream);
-                stream.split(/(?=^error|warning|no parses of|multiple parses of)/i).forEach(doMatches(diagnostics));
+                stream.split("\n").forEach(doMatches(diagnostics));
                 this.diagnosticCollection.set(textDocument.uri, diagnostics);
             }
             childProcess.stdout.on('end', handleStream("STDOUT"));

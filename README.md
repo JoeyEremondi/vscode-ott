@@ -3,6 +3,8 @@
 Provides syntax highlighting and inline error reporting 
 for the [Ott semantics tool](http://www.cl.cam.ac.uk/~pes20/ott/).
 
+![Screenshot of Ott Extension](./media/screenshot.png)
+
 ## Features
 
 ### Syntax Highlighting 

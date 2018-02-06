@@ -5,9 +5,13 @@
     "version": "0.0.1",
     "publisher": "JoeyEremondi",
     "repository": "https://github.com/JoeyEremondi/vscode-ott",
+    "icon": "./media/icon.png",
     "engines": {
         "vscode": "^1.19.0"
     },
+    "keywords": [
+        "ott", "Ott", "semantics", "Programming languages", "PL Theory", "Coq", "Isabelle", "HOL", "OCaml", "LaTeX"
+    ],
     "categories": [
         "Languages"
     ],

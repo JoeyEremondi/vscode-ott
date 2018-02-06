@@ -1,0 +1,61 @@
+% !Ott args = "-o test.v"
+metavar typvar, X ::=
+  {{ isa string }} {{ coq  }} {{ coq-equality }} {{ hol string }} {{com test}}
+  {{ lex alphanum }}     
+
+metavar value_name, x ::=
+  {{ isa string }} {{ coq  }} {{ coq-equality }} {{ hol string }} {{com test}}
+  {{ lex alphanum }} 
+
+indexvar index, i, j, n, m ::=
+  {{ isa nat }} {{ coq nat Fixpoint }}  {{ hol num }}
+  {{ lex numeral }}
+
+grammar
+
+typexpr, t :: TE_ ::=
+  | typvar                            ::   :: typvar
+  | typexpr -> typexpr'                ::   :: arrow
+  
+
+expr, e :: E_ ::=
+  | value_name                         ::   :: ident
+  | e1 ..  en                          ::   :: apply
+  | function value_name -> expr        ::   :: function (+ bind value_name in expr +)
+  | ( e ) :: S :: parens {{coq ([[e]] ) }}
+
+value, v :: V_ ::=
+  | value_name                         ::   :: ident
+  | v1 ..  vn                         ::   :: apply
+  | function value_name -> expr        ::   :: function (+ bind value_name in expr +)  
+
+
+formula :: formula_ ::=
+  | judgement                          ::   :: judgement
+
+terminals :: terminals_ ::=
+  |  ->                                ::   :: arrow      {{ tex \rightarrow}}
+  |  function                          ::   :: function   {{ tex \textbf{function}}}
+
+
+subrules
+  v <:: expr     
+
+substitutions
+  single   expr value_name :: subst  
+  multiple typexpr typvar  :: tsubst 
+
+freevars
+  typexpr typvar :: ftv
+  
+defns 
+Jtype :: '' ::= 
+
+
+defn 
+ |- e : t :: :: Type :: Type_ by
+
+        |- v : t
+ ----------------------------- :: crazy
+        |- e : t 
+
