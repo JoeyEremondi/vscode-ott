@@ -8,6 +8,8 @@ import ChildProcess = cp.ChildProcess;
 
 import * as vscode from 'vscode';
 
+const stripAnsi = require('strip-ansi');
+
 /*
 warning:
 warning: warning:
@@ -93,8 +95,14 @@ export class OttLintingProvider {
                         parseInt(match[2]) - 1, parseInt(match[4]));
                     severity = vscode.DiagnosticSeverity.Error
                 }
+                else if (match = item.match(/multiple parses of (.*) at file.*line\s*(\d+)\s*-\s*(\d+):(.*)/i)) {
+                    message = "Multiple parses for:" + match[1] + match[4].split("--").join("\n\nPossible parse: ");
+                    range = new vscode.Range(parseInt(match[2]) - 1, 0,
+                        parseInt(match[3]) - 1, 0);
+                    severity = vscode.DiagnosticSeverity.Error
+                }
                 else if (match = item.match(/Fatal error: exception Failure\(\"(.*)\"\)/i)) {
-                    message = "Fatal error, exception thrown: " + match[1];
+                    message = "Fatal error, exception thrown: " + match[1]; n
                 }
                 //Catch-all for remaining errors and warnings 
                 else if (match = item.match(/(warning|error):?(.*)/i)) {
@@ -109,10 +117,16 @@ export class OttLintingProvider {
             }
             let handleStream = (streamString: string) => () => {
                 let stream = (streamString == "STDOUT" ? stdoutData : stderrData)
+                //Get rid of any stray color codes
+                stream = stripAnsi(stream);
                 //Replace annoying multi-line errors
-                stream = stream.replace(/error:\s*(\(in checking and disambiguating quotiented syntax\))?\s*\n/i, "error: ")
-                stream = stream.replace("\nno parses (", " -- no parses (")
-                console.log("STREAM:\n" + stream)
+                stream = stream.replace(/error:\s*(\(in checking and disambiguating quotiented syntax\))?\s*\n/g, "error: ");
+                stream = stream.replace(/\nno parses \(/g, " -- no parses (");
+                stream = stream.replace(
+                    /\n(.*)\n\s*or plain:(.*)/g,
+                    (match, $1, $2, offset, original) => { return " -- " + $2; });
+
+                console.log(streamString + ":\n" + stream)
                 // console.log("STDOUT: " + stream);
                 stream.split("\n").forEach(doMatches(diagnostics));
                 this.diagnosticCollection.set(textDocument.uri, diagnostics);
