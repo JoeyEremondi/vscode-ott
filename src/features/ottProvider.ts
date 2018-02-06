@@ -70,8 +70,9 @@ export class OttLintingProvider {
                     severity = vscode.DiagnosticSeverity.Error;
                 }
                 else if (match = item.match(/Lexing error\s*(.*)\s*file=[\S]*\s+line=(\d+)\s+char=(\d+)/i)) {
+                    console.log("Lexing error match!!!!")
                     message = "Lexing error. (Maybe '}}}' is missing space in a tex hom?)";
-                    if (parseInt(match[2]) - 1 < 1) {
+                    if (parseInt(match[2]) - 1 >= 1) {
                         range = new vscode.Range(parseInt(match[2]) - 1, parseInt(match[3]),
                             parseInt(match[2]) - 1, parseInt(match[3]));
                     }
@@ -79,7 +80,7 @@ export class OttLintingProvider {
                 }
                 else if (match = item.match(/Parse error:\s*(.*)\s*file=[\S]*\s+line=(\d+)\s+char=(\d+)/i)) {
                     message = match[1];
-                    if (parseInt(match[2]) - 1 < 1) {
+                    if (parseInt(match[2]) - 1 >= 1) {
                         range = new vscode.Range(parseInt(match[2]) - 1, parseInt(match[3]),
                             parseInt(match[2]) - 1, parseInt(match[3]));
                     }
@@ -102,7 +103,7 @@ export class OttLintingProvider {
                     severity = vscode.DiagnosticSeverity.Error
                 }
                 else if (match = item.match(/Fatal error: exception Failure\(\"(.*)\"\)/i)) {
-                    message = "Fatal error, exception thrown: " + match[1]; n
+                    message = "Fatal error, exception thrown: " + match[1];
                 }
                 //Catch-all for remaining errors and warnings 
                 else if (match = item.match(/(warning|error):?(.*)/i)) {
