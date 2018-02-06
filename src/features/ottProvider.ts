@@ -60,14 +60,13 @@ export class OttLintingProvider {
                 console.log("ITEM " + item + " .");
                 let match = null;
                 let range = new vscode.Range(0, 0, 0, 1);
-                let severity = item.match(/(warning|no parse)/i) != null ? vscode.DiagnosticSeverity.Warning : vscode.DiagnosticSeverity.Error;
+                let severity = item.match(/(warning)/i) != null ? vscode.DiagnosticSeverity.Warning : vscode.DiagnosticSeverity.Error;
                 let message = "";
 
-                if (match = item.match(/error:([\s\S]*) at file [\s\S]* line (\d+) char (\d+) - (\d+)/i)) {
-                    message = match[1];
-                    range = new vscode.Range(parseInt(match[2]) - 1, parseInt(match[3]),
-                        parseInt(match[2]) - 1, parseInt(match[4]));
-                    severity = vscode.DiagnosticSeverity.Error;
+                if (match = item.match(/(warning|error):([\s\S]*) at file [\s\S]* line (\d+) char (\d+) - (\d+)/i)) {
+                    message = match[2];
+                    range = new vscode.Range(parseInt(match[3]) - 1, parseInt(match[4]),
+                        parseInt(match[3]) - 1, parseInt(match[5]));
                 }
                 else if (match = item.match(/Lexing error\s*(.*)\s*file=[\S]*\s+line=(\d+)\s+char=(\d+)/i)) {
                     console.log("Lexing error match!!!!")
@@ -91,7 +90,7 @@ export class OttLintingProvider {
                     range = new vscode.Range(parseInt(match[2]) - 1, parseInt(match[4]),
                         parseInt(match[3]) - 1, 0);
                     diagnostics.push(new vscode.Diagnostic(range, message, vscode.DiagnosticSeverity.Information));
-                    message = "No parse for:" + match[5];
+                    message = "No parse for:" + match[1];
                     range = new vscode.Range(parseInt(match[2]) - 1, 0,
                         parseInt(match[2]) - 1, parseInt(match[4]));
                     severity = vscode.DiagnosticSeverity.Error
