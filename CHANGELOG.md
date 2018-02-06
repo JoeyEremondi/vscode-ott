@@ -5,3 +5,8 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 ## [ 0.0.1 ]
 - Initial release
+
+## [ 0.0.2 ]
+- Improved and cleaner error parsing
+- Add back brackets to surrounding pairs, remove single quotes (messes up with prime variables)
+- Logo and screenshot added

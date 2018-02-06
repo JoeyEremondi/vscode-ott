@@ -2,15 +2,19 @@
     "name": "ott",
     "displayName": "ott",
     "description": "Ott formatting, typechecking, and syntax highlighting",
-    "version": "0.0.1",
+    "version": "0.0.2",
     "publisher": "JoeyEremondi",
     "repository": "https://github.com/JoeyEremondi/vscode-ott",
-    "icon": "./media/icon.png",
+    "icon": "media/icon.png",
     "engines": {
         "vscode": "^1.19.0"
     },
     "keywords": [
-        "ott", "Ott", "semantics", "Programming languages", "PL Theory", "Coq", "Isabelle", "HOL", "OCaml", "LaTeX"
+        "semantics",
+        "Programming languages",
+        "Coq",
+        "Isabelle/HOL",
+        "LaTeX"
     ],
     "categories": [
         "Languages"
@@ -22,8 +26,13 @@
     "contributes": {
         "languages": [{
             "id": "ott",
-            "aliases": ["Ott", "ott"],
-            "extensions": [".ott"],
+            "aliases": [
+                "Ott",
+                "ott"
+            ],
+            "extensions": [
+                ".ott"
+            ],
             "configuration": "./language-configuration.json"
         }],
         "grammars": [{
@@ -42,6 +51,7 @@
     "devDependencies": {
         "typescript": "^2.6.1",
         "vscode": "^1.1.6",
+        "strip-ansi": "^4.0.0",
         "@types/node": "^7.0.43",
         "@types/mocha": "^2.2.42"
     }
