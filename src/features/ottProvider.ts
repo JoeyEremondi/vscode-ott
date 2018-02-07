@@ -32,7 +32,7 @@ export class OttLintingProvider {
         this.logPanel.appendLine("Ott Language Extension Started")
     }
 
-    private logMessage(s: String) {
+    private logMessage(s: string) {
         this.logPanel.appendLine(s);
     }
 
