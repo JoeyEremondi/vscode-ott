@@ -8,8 +8,6 @@ import ChildProcess = cp.ChildProcess;
 
 import * as vscode from 'vscode';
 
-const stripAnsi = require('strip-ansi');
-
 /*
 warning:
 warning: warning:
@@ -25,7 +23,18 @@ no parses (char \d+)
 
 export class OttLintingProvider {
 
+    logPanel: vscode.OutputChannel;
+
     private diagnosticCollection: vscode.DiagnosticCollection;
+
+    public constructor() {
+        this.logPanel = vscode.window.createOutputChannel('Ott Output');
+        this.logPanel.appendLine("Ott Language Extension Started")
+    }
+
+    private logMessage(s: String) {
+        this.logPanel.appendLine(s);
+    }
 
     private doHlint(textDocument: vscode.TextDocument) {
         if (textDocument.languageId !== 'ott') {
@@ -42,12 +51,14 @@ export class OttLintingProvider {
         let firstLine = textDocument.getText().toString().split("\n")[0];
         let magicCommentMatch = firstLine.match(/%\s+!Ott\s+args\s*=\s*\"(.*)\"/i);
         if (magicCommentMatch != null) {
-            console.log("Magic comment detected with arguments " + magicCommentMatch[1])
+            this.logMessage("\n\n\n********************************************************")
+            this.logMessage("Magic comment detected with arguments " + magicCommentMatch[1])
             magicCommentArgs = magicCommentArgs.concat(magicCommentMatch[1].split(/\s/i));
         }
 
         let args = [textDocument.fileName, "-colour=false"].concat(magicCommentArgs);
 
+        this.logMessage("running command: ott " + args.join(" "));
         let childProcess = cp.spawn('ott', args, options);
         if (childProcess.pid) {
             childProcess.stdout.on('data', (data: Buffer) => {
@@ -57,7 +68,7 @@ export class OttLintingProvider {
                 stderrData += data;
             });
             let doMatches = diagnostics => item => {
-                console.log("ITEM " + item + " .");
+                // console.log("ITEM " + item + " .");
                 let match = null;
                 let range = new vscode.Range(0, 0, 0, 1);
                 let severity = item.match(/(warning)/i) != null ? vscode.DiagnosticSeverity.Warning : vscode.DiagnosticSeverity.Error;
@@ -69,7 +80,7 @@ export class OttLintingProvider {
                         parseInt(match[3]) - 1, parseInt(match[5]));
                 }
                 else if (match = item.match(/Lexing error\s*(.*)\s*file=[\S]*\s+line=(\d+)\s+char=(\d+)/i)) {
-                    console.log("Lexing error match!!!!")
+                    // console.log("Lexing error match!!!!")
                     message = "Lexing error. (Maybe '}}}' is missing space in a tex hom?)";
                     if (parseInt(match[2]) - 1 >= 1) {
                         range = new vscode.Range(parseInt(match[2]) - 1, parseInt(match[3]),
@@ -117,8 +128,9 @@ export class OttLintingProvider {
             }
             let handleStream = (streamString: string) => () => {
                 let stream = (streamString == "STDOUT" ? stdoutData : stderrData)
-                //Get rid of any stray color codes
-                stream = stripAnsi(stream);
+                this.logMessage("Ott output from " + stream);
+                this.logMessage(stdoutData);
+
                 //Replace annoying multi-line errors
                 stream = stream.replace(/error:\s*(\(in checking and disambiguating quotiented syntax\))?\s*\n/g, "error: ");
                 stream = stream.replace(/\nno parses \(/g, " -- no parses (");
@@ -126,7 +138,6 @@ export class OttLintingProvider {
                     /\n(.*)\n\s*or plain:(.*)/g,
                     (match, $1, $2, offset, original) => { return " -- " + $2; });
 
-                console.log(streamString + ":\n" + stream)
                 // console.log("STDOUT: " + stream);
                 stream.split("\n").forEach(doMatches(diagnostics));
                 this.diagnosticCollection.set(textDocument.uri, diagnostics);
@@ -167,6 +178,7 @@ export class OttLintingProvider {
     private command: vscode.Disposable;
 
     public activate(subscriptions: vscode.Disposable[]) {
+
         this.command = vscode.commands.registerCommand(OttLintingProvider.commandId, this.runCodeAction, this);
         subscriptions.push(this);
         this.diagnosticCollection = vscode.languages.createDiagnosticCollection();
