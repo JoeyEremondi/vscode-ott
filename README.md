@@ -76,3 +76,7 @@ Alternately, if you would like to collaborate, I will happily add collaborators 
 ## [ 0.0.3 ]
 - Remove ansi-strip dependency
 - Add output from Ott binary to "Output" pane 
+
+## [ 0.0.4 ]
+- Error parsing for bad contextrules
+- Add "postprocess" option for magic comments 
