@@ -37,6 +37,7 @@ export class OttLintingProvider {
     }
 
     private doHlint(textDocument: vscode.TextDocument) {
+        this.logMessage("\n\n\n********************************************************")
         if (textDocument.languageId !== 'ott') {
             return;
         }
@@ -48,12 +49,26 @@ export class OttLintingProvider {
         let options = vscode.workspace.rootPath ? { cwd: vscode.workspace.rootPath } : undefined;
 
         let magicCommentArgs = [];
-        let firstLine = textDocument.getText().toString().split("\n")[0];
-        let magicCommentMatch = firstLine.match(/%\s+!Ott\s+args\s*=\s*\"(.*)\"/i);
-        if (magicCommentMatch != null) {
-            this.logMessage("\n\n\n********************************************************")
-            this.logMessage("Magic comment detected with arguments " + magicCommentMatch[1])
-            magicCommentArgs = magicCommentArgs.concat(magicCommentMatch[1].split(/\s/i));
+        let postProcessors = [];
+
+        let magicCommentRE = /%\s+!Ott\s+(args|postprocess)\s*=\s*\"(.*)\"\s*\n/g;
+        let docString = textDocument.getText().toString();
+        let match = magicCommentRE.exec(docString);
+        while (match != null) {
+            switch (match[1]) {
+                case "args":
+                    this.logMessage("Magic comment arguments detected: " + match[2]);
+                    magicCommentArgs = magicCommentArgs.concat(match[2].split(/\s/i));
+                    break;
+                case "postprocess":
+                    this.logMessage("Magic comment postprocessor detected: " + match[2]);
+                    postProcessors.push(match[2].split(/\s/i));
+                    break;
+                default:
+                    break;
+            }
+            match = magicCommentRE.exec(docString);
+
         }
 
         let args = [textDocument.fileName, "-colour=false"].concat(magicCommentArgs);
@@ -133,7 +148,7 @@ export class OttLintingProvider {
 
                 //Replace annoying multi-line errors
                 stream = stream.replace(/error:\s*(\(in checking and disambiguating quotiented syntax\))?\s*\n/g, "error: ");
-                stream = stream.replace(/\nno parses \(/g, " -- no parses (");
+                stream = stream.replace(/\nno parses \(.*\)/g, " -- no parses (");
                 stream = stream.replace(
                     /\n(.*)\n\s*or plain:(.*)/g,
                     (match, $1, $2, offset, original) => { return " -- " + $2; });
@@ -141,9 +156,34 @@ export class OttLintingProvider {
                 // console.log("STDOUT: " + stream);
                 stream.split("\n").forEach(doMatches(diagnostics));
                 this.diagnosticCollection.set(textDocument.uri, diagnostics);
+
             }
+
+
+
+            //If stdout is done, run postprocessor command
+
             childProcess.stdout.on('end', handleStream("STDOUT"));
             childProcess.stderr.on('end', handleStream("STDERR"));
+            //Run any post-processors from magic comments once ott has finished running
+            childProcess.on('exit', () => {
+                postProcessors.forEach(postProcessor => {
+                    this.logMessage("Runing postprocessor: " + postProcessor.join(" "));
+                    let postProcessorProcess = cp.spawn(postProcessor[0], postProcessor.slice(1), options);
+                    let ppOut = "";
+                    if (postProcessorProcess.pid) {
+                        postProcessorProcess.stdout.on('data', (data: Buffer) => {
+                            ppOut += data;
+                        });
+
+                        postProcessorProcess.stdout.on('end', () => {
+                            this.logMessage("Postproceesor Output:\n" + ppOut);
+                            return;
+                        });
+                    }
+                });
+            })
+
 
         }
     }
