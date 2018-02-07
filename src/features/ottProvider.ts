@@ -83,7 +83,7 @@ export class OttLintingProvider {
                 stderrData += data;
             });
             let doMatches = diagnostics => item => {
-                // console.log("ITEM " + item + " .");
+                console.log("ITEM " + item);
                 let match = null;
                 let range = new vscode.Range(0, 0, 0, 1);
                 let severity = item.match(/(warning)/i) != null ? vscode.DiagnosticSeverity.Warning : vscode.DiagnosticSeverity.Error;
@@ -147,11 +147,15 @@ export class OttLintingProvider {
                 this.logMessage(stdoutData);
 
                 //Replace annoying multi-line errors
+                stream = stream.replace(/error:\s*(\(in checking syntax\))?\s*\n/g, "error: ");
                 stream = stream.replace(/error:\s*(\(in checking and disambiguating quotiented syntax\))?\s*\n/g, "error: ");
                 stream = stream.replace(/\nno parses \(.*\)/g, " -- no parses (");
                 stream = stream.replace(
                     /\n(.*)\n\s*or plain:(.*)/g,
                     (match, $1, $2, offset, original) => { return " -- " + $2; });
+                stream = stream.replace(
+                    /production\s*\n(.*)\n\s*of rule/g,
+                    (match, $1, $2, offset, original) => { return " production " + $1 + " of rule"; });
 
                 // console.log("STDOUT: " + stream);
                 stream.split("\n").forEach(doMatches(diagnostics));

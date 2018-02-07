@@ -1,4 +1,6 @@
 % !Ott args = "-o test.v"
+% !Ott postprocess = "echo Foo"
+% !Ott postprocess = "echo Bar"
 metavar typvar, X ::=
   {{ isa string }} {{ coq  }} {{ coq-equality }} {{ hol string }} {{com test}}
   {{ lex alphanum }}     
@@ -9,7 +11,7 @@ metavar value_name, x ::=
 
 indexvar index, i, j, n, m ::=
   {{ isa nat }} {{ coq nat Fixpoint }}  {{ hol num }}
-  {{ lex numeral }} 
+  {{ lex numeral }}
 
 grammar
 
@@ -21,9 +23,11 @@ typexpr, t :: TE_ ::=
 expr, e :: E_ ::=
   | value_name                         ::   :: ident
   | e1 ..  en                          ::   :: apply
-  | e e'                         :: :: apply2
   | function value_name -> expr        ::   :: function (+ bind value_name in expr +)
   | ( e ) :: S :: parens {{coq ([[e]] ) }}
+
+C :: C_ ::=
+  | e , e2 __ :: :: badRule
 
 value, v :: V_ ::=
   | value_name                         ::   :: ident
@@ -42,6 +46,9 @@ terminals :: terminals_ ::=
 subrules
   v <:: expr     
 
+contextrules
+  C _:: e :: e
+
 substitutions
   single   expr value_name :: subst  
   multiple typexpr typvar  :: tsubst 
@@ -58,5 +65,5 @@ defn
 
         |- v : t
  ----------------------------- :: crazy
-        |- e e' e'' : t 
+        |- e : t 
 

@@ -1,4 +1,6 @@
 % !Ott args = "-o test.v"
+% !Ott postprocess = "echo Foo"
+% !Ott postprocess = "echo Bar"
 metavar typvar, X ::=
   {{ isa string }} {{ coq  }} {{ coq-equality }} {{ hol string }} {{com test}}
   {{ lex alphanum }}     
