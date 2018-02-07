@@ -18,7 +18,7 @@ classes might not get distinguished if your theme doesn't define colors for enou
 I'm no expert when it comes to visual design, so pull-requests are welcome with regards
 to the color choices.
 
-### Inline Error Reporting
+### Build-on-Save and Inline Error Reporting
 
 When you save your file, it will be run with `ott` and any errors will be reported inline. 
 
@@ -28,6 +28,15 @@ By default, `ott` is run with no arguments. However, if the first line of your f
 
 Then, Ott will be run with whatever args are given. This is useful for re-generating
 LaTeX or proof-assistant code automatically when you save.
+
+#### Post-processors
+If there are one or more magic comments of the form:
+
+```% !Ott postprocess = "COMMAND"``` 
+
+then on saving, after `ott` has finished, the given command(s) will be run.
+This is useful for building LaTeX into a PDF file, or for automatically running scripts
+over generated proof-assistant code.
 
 ## Requirements
 
@@ -64,19 +73,24 @@ Alternately, if you would like to collaborate, I will happily add collaborators 
 
 ## Release Notes
 
-### [ 0.0.1 ]
+### [ 0.0.4 ]
+- Error parsing for bad contextrules
+- Add "postprocess" option for magic comments 
 
-- Initial release
+### [ 0.0.3 ]
+- Remove ansi-strip dependency
+- Add output from Ott binary to "Output" pane 
 
 ### [ 0.0.2 ]
 - Improved and cleaner error parsing
 - Add back brackets to surrounding pairs, remove single quotes (messes up with prime variables)
 - Logo and screenshot added
 
-## [ 0.0.3 ]
-- Remove ansi-strip dependency
-- Add output from Ott binary to "Output" pane 
+### [ 0.0.1 ]
 
-## [ 0.0.4 ]
-- Error parsing for bad contextrules
-- Add "postprocess" option for magic comments 
+- Initial release
+
+
+
+
+
