@@ -72,3 +72,7 @@ Alternately, if you would like to collaborate, I will happily add collaborators 
 - Improved and cleaner error parsing
 - Add back brackets to surrounding pairs, remove single quotes (messes up with prime variables)
 - Logo and screenshot added
+
+## [ 0.0.3 ]
+- Remove ansi-strip dependency
+- Add output from Ott binary to "Output" pane 

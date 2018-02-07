@@ -10,3 +10,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - Improved and cleaner error parsing
 - Add back brackets to surrounding pairs, remove single quotes (messes up with prime variables)
 - Logo and screenshot added
+
+## [ 0.0.3 ]
+- Remove ansi-strip dependency
+- Add output from Ott binary to "Output" pane 
