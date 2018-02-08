@@ -1,5 +1,10 @@
 # Change Log
 
+### [ 0.0.6 ]
+- Fix regression in parse "no parse" errors
+- Add parsing for "no conclusion" errors
+- Internal warnings are now marked as Information, not Warning
+
 ### [ 0.0.5 ]
 - postprocess uses exec, not spawn 
 

@@ -87,12 +87,18 @@ export class OttLintingProvider {
                 let match = null;
                 let range = new vscode.Range(0, 0, 0, 1);
                 let severity = item.match(/(warning)/i) != null ? vscode.DiagnosticSeverity.Warning : vscode.DiagnosticSeverity.Error;
+                severity = item.match(/(warning: internal:)/i) != null ? vscode.DiagnosticSeverity.Information : severity;
                 let message = "";
 
                 if (match = item.match(/(warning|error):([\s\S]*) at file [\s\S]* line (\d+) char (\d+) - (\d+)/i)) {
                     message = match[2];
                     range = new vscode.Range(parseInt(match[3]) - 1, parseInt(match[4]),
                         parseInt(match[3]) - 1, parseInt(match[5]));
+                }
+                if (match = item.match(/(warning|error):([\s\S]*) at file [\s\S]* line (\d+) - (\d+)/i)) {
+                    message = match[2];
+                    range = new vscode.Range(parseInt(match[3]) - 1, 0,
+                        parseInt(match[4]) - 1, 0);
                 }
                 else if (match = item.match(/Lexing error\s*(.*)\s*file=[\S]*\s+line=(\d+)\s+char=(\d+)/i)) {
                     // console.log("Lexing error match!!!!")
@@ -112,6 +118,7 @@ export class OttLintingProvider {
                     severity = vscode.DiagnosticSeverity.Error
                 }
                 else if (match = item.match(/no parses of (.*) at file.*line\s*(\d+)\s*-\s*(\d+):.*no parses \(char (\d+)\):/i)) {
+                    console.log("no parses match");
                     message = "Parse problem noticed here";
                     range = new vscode.Range(parseInt(match[2]) - 1, parseInt(match[4]),
                         parseInt(match[3]) - 1, 0);
@@ -149,7 +156,8 @@ export class OttLintingProvider {
                 //Replace annoying multi-line errors
                 stream = stream.replace(/error:\s*(\(in checking syntax\))?\s*\n/g, "error: ");
                 stream = stream.replace(/error:\s*(\(in checking and disambiguating quotiented syntax\))?\s*\n/g, "error: ");
-                stream = stream.replace(/\nno parses \(.*\)/g, " -- no parses (");
+                stream = stream.replace(/Error\s*in processing definitions:\s*\n/g, "");
+                stream = stream.replace(/\nno parses \(/g, " -- no parses (");
                 stream = stream.replace(
                     /\n(.*)\n\s*or plain:(.*)/g,
                     (match, $1, $2, offset, original) => { return " -- " + $2; });
