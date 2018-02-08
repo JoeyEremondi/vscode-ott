@@ -1,9 +1,9 @@
 % !Ott args = "-o test.v"
-% !Ott postprocess = "echo Foo"
-% !Ott postprocess = "echo Bar"
+% !Ott postprocess = "pwd"
+% !Ott postprocess = "sed -i -e 's/e/ee/g' test.v"
 metavar typvar, X ::=
   {{ isa string }} {{ coq  }} {{ coq-equality }} {{ hol string }} {{com test}}
-  {{ lex alphanum }}     
+  {{ lex alphanum }}       
 
 metavar value_name, x ::=
   {{ isa string }} {{ coq  }} {{ coq-equality }} {{ hol string }} {{com test}}
@@ -12,7 +12,7 @@ metavar value_name, x ::=
 indexvar index, i, j, n, m ::=
   {{ isa nat }} {{ coq nat Fixpoint }}  {{ hol num }}
   {{ lex numeral }}
-
+ 
 grammar
 
 typexpr, t :: TE_ ::=

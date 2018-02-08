@@ -2,7 +2,7 @@
     "name": "ott",
     "displayName": "ott",
     "description": "Ott formatting, typechecking, and syntax highlighting",
-    "version": "0.0.3",
+    "version": "0.0.5",
     "publisher": "JoeyEremondi",
     "repository": "https://github.com/JoeyEremondi/vscode-ott",
     "icon": "media/icon.png",
@@ -24,26 +24,22 @@
     ],
     "main": "./out/extension",
     "contributes": {
-        "languages": [
-            {
-                "id": "ott",
-                "aliases": [
-                    "Ott",
-                    "ott"
-                ],
-                "extensions": [
-                    ".ott"
-                ],
-                "configuration": "./language-configuration.json"
-            }
-        ],
-        "grammars": [
-            {
-                "language": "ott",
-                "scopeName": "source.ott",
-                "path": "./syntaxes/ott.tmLanguage.json"
-            }
-        ]
+        "languages": [{
+            "id": "ott",
+            "aliases": [
+                "Ott",
+                "ott"
+            ],
+            "extensions": [
+                ".ott"
+            ],
+            "configuration": "./language-configuration.json"
+        }],
+        "grammars": [{
+            "language": "ott",
+            "scopeName": "source.ott",
+            "path": "./syntaxes/ott.tmLanguage.json"
+        }]
     },
     "scripts": {
         "vscode:prepublish": "npm run compile",

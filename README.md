@@ -73,6 +73,9 @@ Alternately, if you would like to collaborate, I will happily add collaborators 
 
 ## Release Notes
 
+### [ 0.0.5 ]
+- postprocess uses exec, not spawn 
+
 ### [ 0.0.4 ]
 - Error parsing for bad contextrules
 - Add "postprocess" option for magic comments 

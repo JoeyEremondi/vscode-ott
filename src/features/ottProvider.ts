@@ -62,7 +62,7 @@ export class OttLintingProvider {
                     break;
                 case "postprocess":
                     this.logMessage("Magic comment postprocessor detected: " + match[2]);
-                    postProcessors.push(match[2].split(/\s/i));
+                    postProcessors.push(match[2]);
                     break;
                 default:
                     break;
@@ -172,21 +172,19 @@ export class OttLintingProvider {
             //Run any post-processors from magic comments once ott has finished running
             childProcess.on('exit', () => {
                 postProcessors.forEach(postProcessor => {
-                    this.logMessage("Runing postprocessor: " + postProcessor.join(" "));
-                    let postProcessorProcess = cp.spawn(postProcessor[0], postProcessor.slice(1), options);
-                    let ppOut = "";
-                    if (postProcessorProcess.pid) {
-                        postProcessorProcess.stdout.on('data', (data: Buffer) => {
-                            ppOut += data;
-                        });
+                    this.logMessage("Runing postprocessor: " + postProcessor);
+                    let postProcessorProcess = cp.exec(postProcessor, options, (err, stdout, stderr) => {
+                        this.logMessage("Postproceesor '" + postProcessor + "' Output:\n" + stdout);
+                        if (stderr != "") {
+                            this.logMessage("Postproceesor Errors:\n" + stderr);
+                        }
+                        if (err) {
+                            this.logMessage("Postproceesor exited with error: " + err);
+                        }
+                    });
 
-                        postProcessorProcess.stdout.on('end', () => {
-                            this.logMessage("Postproceesor Output:\n" + ppOut);
-                            return;
-                        });
-                    }
                 });
-            })
+            });
 
 
         }

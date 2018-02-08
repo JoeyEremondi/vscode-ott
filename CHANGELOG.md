@@ -1,5 +1,8 @@
 # Change Log
 
+### [ 0.0.5 ]
+- postprocess uses exec, not spawn 
+
 ### [ 0.0.4 ]
 - Error parsing for bad contextrules
 - Add "postprocess" option for magic comments 
