@@ -95,7 +95,7 @@ export class OttLintingProvider {
                     range = new vscode.Range(parseInt(match[3]) - 1, parseInt(match[4]),
                         parseInt(match[3]) - 1, parseInt(match[5]));
                 }
-                if (match = item.match(/(warning|error):([\s\S]*) at file [\s\S]* line (\d+) - (\d+)/i)) {
+                else if (match = item.match(/(warning|error):([\s\S]*) at file [\s\S]* line (\d+) - (\d+)/i)) {
                     message = match[2];
                     range = new vscode.Range(parseInt(match[3]) - 1, 0,
                         parseInt(match[4]) - 1, 0);
