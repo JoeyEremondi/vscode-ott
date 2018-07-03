@@ -100,8 +100,8 @@ export class OttLintingProvider {
                             parseInt(match[4]) - 1, parseInt(match[5])));
                     } else if (match = locString.match(/(File [\s\S]* )?on line (\d+) - (\d+).*/i)) {
                         console.log("match 3 " + match);
-                        ranges.push(new vscode.Range(parseInt(match[3]) - 1, parseInt(match[4]),
-                            parseInt(match[3]) - 1, parseInt(match[5])));
+                        ranges.push(new vscode.Range(parseInt(match[2]) - 1, parseInt(match[0]),
+                            parseInt(match[3]) - 1, parseInt(match[0])));
                     }
                 });
                 return ranges;
@@ -159,7 +159,7 @@ export class OttLintingProvider {
                 if (maybeLoc.length > 0) {
                     ranges = maybeLoc;
                     lineArr.splice(0, 1);
-                    let rest = lineArr.join("\n");
+                    let rest = lineArr.join(" \n");
                     console.log("Setting REST to " + rest);
                     item = rest;
                     // }
