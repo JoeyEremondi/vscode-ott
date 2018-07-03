@@ -5,7 +5,7 @@ metavar typvar, X ::=
 
 metavar value_name, x ::=
   {{ isa string }} {{ coq  }} {{ coq-equality }} {{ hol string }} {{com test}}
-  {{ lex alphanum }} 
+  {{ lex alphanum }}  
 
 indexvar index, i, j, n, m ::=
   {{ isa nat }} {{ coq nat Fixpoint }}  {{ hol num }}

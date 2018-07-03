@@ -5,13 +5,13 @@ metavar typvar, X ::=
 
 metavar value_name, x ::=
   {{ isa string }} {{ coq  }} {{ coq-equality }} {{ hol string }} {{com test}}
-  {{ lex alphanum }} 
+  {{ lex alphanum }}  
 
 indexvar index, i, j, n, m ::=
   {{ isa nat }} {{ coq nat Fixpoint }}  {{ hol num }}
   {{ lex numeral }}
 
-grammar 
+grammar
 
 typexpr, t :: TE_ ::=
   | typvar                            ::   :: typvar
@@ -20,7 +20,8 @@ typexpr, t :: TE_ ::=
 
 expr, e :: E_ ::=
   | value_name                         ::   :: ident
-  | e1 ..  vn                          ::   :: apply
+  | e1 ..  en                          ::   :: apply
+  | e e'                         :: :: apply2
   | function value_name -> expr        ::   :: function (+ bind value_name in expr +)
   | ( e ) :: S :: parens {{coq ([[e]] ) }}
 
@@ -34,7 +35,7 @@ formula :: formula_ ::=
   | judgement                          ::   :: judgement
 
 terminals :: terminals_ ::=
-  |  ->                                ::   :: arrow      {{ tex \rightarrow }}
+  |  ->                                ::   :: arrow      {{ tex \rightarrow}}
   |  function                          ::   :: function   {{ tex \textbf{function} }}
 
 
@@ -47,7 +48,7 @@ substitutions
 
 freevars
   typexpr typvar :: ftv
-   
+  
 defns 
 Jtype :: '' ::= 
 
@@ -57,5 +58,9 @@ defn
 
         |- v : t
  ----------------------------- :: crazy
-        |- e : t 
+        |- e ~ x : t 
+
+        |- v : t
+ ----------------------------- :: crazy
+        |- e ~ x : t 
 

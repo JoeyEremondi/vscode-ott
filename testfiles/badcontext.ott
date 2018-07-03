@@ -12,9 +12,9 @@ metavar value_name, x ::=
 indexvar index, i, j, n, m ::=
   {{ isa nat }} {{ coq nat Fixpoint }}  {{ hol num }}
   {{ lex numeral }}
- 
-grammar
 
+grammar 
+ 
 typexpr, t :: TE_ ::=
   | typvar                            ::   :: typvar
   | typexpr -> typexpr'                ::   :: arrow

@@ -7,6 +7,7 @@ import * as cp from 'child_process';
 import ChildProcess = cp.ChildProcess;
 
 import * as vscode from 'vscode';
+import { WSAETOOMANYREFS } from 'constants';
 
 /*
 warning:
@@ -24,12 +25,14 @@ no parses (char \d+)
 export class OttLintingProvider {
 
     logPanel: vscode.OutputChannel;
+    ottCommand: string;
 
     private diagnosticCollection: vscode.DiagnosticCollection;
 
     public constructor() {
         this.logPanel = vscode.window.createOutputChannel('Ott Output');
-        this.logPanel.appendLine("Ott Language Extension Started")
+        this.logPanel.appendLine("Ott Language Extension Started");
+        this.ottCommand = vscode.workspace.getConfiguration('ott').get('ott_command');
     }
 
     private logMessage(s: string) {
@@ -71,10 +74,10 @@ export class OttLintingProvider {
 
         }
 
-        let args = [textDocument.fileName, "-colour=false"].concat(magicCommentArgs);
+        let args = [textDocument.fileName, "-colour", "false"].concat(magicCommentArgs);
 
-        this.logMessage("running command: ott " + args.join(" "));
-        let childProcess = cp.spawn('ott', args, options);
+        this.logMessage("running command: " + this.ottCommand + " " + args.join(" "));
+        let childProcess = cp.spawn(this.ottCommand, args, options);
         if (childProcess.pid) {
             childProcess.stdout.on('data', (data: Buffer) => {
                 stdoutData += data;
@@ -82,91 +85,118 @@ export class OttLintingProvider {
             childProcess.stderr.on('data', (data: Buffer) => {
                 stderrData += data;
             });
-            let doMatches = diagnostics => item => {
+            function parseLoc(line: string):vscode.Range[]  {
+                var ranges : vscode.Range[] = [] ;
+                let match;
+                line.split(";").forEach(locString => {
+                    if (match = locString.match(/(File [\s\S]* )?on line (\d+), column (\d+) - (\d+).*/i)) {
+                        console.log("match 1 " + match);
+                        let range = new vscode.Range(parseInt(match[2]) - 1, parseInt(match[3]),
+                            parseInt(match[2]) - 1, parseInt(match[4]));
+                        ranges.push(range);
+                    } else if (match = locString.match(/(File [\s\S]* )?on line (\d+), column (\d+) - line (\d+), column (\d+).*/i)) {
+                        console.log("match 2 " + match);
+                        ranges.push(new vscode.Range(parseInt(match[2]) - 1, parseInt(match[3]),
+                            parseInt(match[4]) - 1, parseInt(match[5])));
+                    } else if (match = locString.match(/(File [\s\S]* )?on line (\d+) - (\d+).*/i)) {
+                        console.log("match 3 " + match);
+                        ranges.push(new vscode.Range(parseInt(match[3]) - 1, parseInt(match[4]),
+                            parseInt(match[3]) - 1, parseInt(match[5])));
+                    }
+                });
+                return ranges;
+            }
+            let getMessages = (stream: string) => {
+                console.log("In Get Messages, stream " + stream);
+                var ret = [];
+                let toProcess = stream.split("\n").reverse();
+                console.log("Lines: " + toProcess);
+                var currentGroup = [];
+                let storeGroup = () => {
+                    if (currentGroup.length > 0) {
+                        ret.push(currentGroup.join("\n"));
+                        currentGroup = [];
+                    }
+                }
+                while (toProcess.length > 0) {
+                    let current = toProcess.pop();
+                    current = current.trim();
+                    if (current.startsWith("Ott version") || current.startsWith("Definition") || current.length < 1 ) {
+                        console.log("Skipping version/defn line " + current);
+                        continue;
+                    } else if (parseLoc(current).length > 0) {
+                        console.log("Storing loc line " + current);
+                        storeGroup();
+                        //Add this line and the next to our group, since we know 
+                        //The next line is Error or Warning
+                        currentGroup.push(current);
+                        current = toProcess.pop();
+                        console.log("After loc storing line " + current);
+                        currentGroup.push(current);
+                        continue;
+                    } else if (current.startsWith("Error:") || current.startsWith("Warning:")) {
+                        console.log("Storing error start line " + current);
+                        storeGroup();
+                        currentGroup.push(current);
+                    } else {
+                        console.log("Storing extra line " + current);
+                        currentGroup.push(current);
+                    }
+
+                }
+                storeGroup();
+                return ret;
+            }
+            let doMatches = diagnostics => (item: string) => {
                 console.log("ITEM " + item);
                 let match = null;
-                let range = new vscode.Range(0, 0, 0, 1);
-                let severity = item.match(/(warning)/i) != null ? vscode.DiagnosticSeverity.Warning : vscode.DiagnosticSeverity.Error;
-                severity = item.match(/(warning: internal:)/i) != null ? vscode.DiagnosticSeverity.Information : severity;
-                let message = "";
+                let ranges = [new vscode.Range(0, 0, 0, 1)];
 
-                if (match = item.match(/(warning|error):([\s\S]*) at file [\s\S]* line (\d+) char (\d+) - (\d+)/i)) {
-                    message = match[2];
-                    range = new vscode.Range(parseInt(match[3]) - 1, parseInt(match[4]),
-                        parseInt(match[3]) - 1, parseInt(match[5]));
-                }
-                else if (match = item.match(/(warning|error):([\s\S]*) at file [\s\S]* line (\d+) - (\d+)/i)) {
-                    message = match[2];
-                    range = new vscode.Range(parseInt(match[3]) - 1, 0,
-                        parseInt(match[4]) - 1, 0);
-                }
-                else if (match = item.match(/Lexing error\s*(.*)\s*file=[\S]*\s+line=(\d+)\s+char=(\d+)/i)) {
-                    // console.log("Lexing error match!!!!")
-                    message = "Lexing error. (Maybe '}}}' is missing space in a tex hom?)";
-                    if (parseInt(match[2]) - 1 >= 1) {
-                        range = new vscode.Range(parseInt(match[2]) - 1, parseInt(match[3]),
-                            parseInt(match[2]) - 1, parseInt(match[3]));
-                    }
-                    severity = vscode.DiagnosticSeverity.Error
-                }
-                else if (match = item.match(/Parse error:\s*(.*)\s*file=[\S]*\s+line=(\d+)\s+char=(\d+)/i)) {
-                    message = match[1];
-                    if (parseInt(match[2]) - 1 >= 1) {
-                        range = new vscode.Range(parseInt(match[2]) - 1, parseInt(match[3]),
-                            parseInt(match[2]) - 1, parseInt(match[3]));
-                    }
-                    severity = vscode.DiagnosticSeverity.Error
-                }
-                else if (match = item.match(/no parses of (.*) at file.*line\s*(\d+)\s*-\s*(\d+):.*no parses \(char (\d+)\):/i)) {
-                    console.log("no parses match");
-                    message = "Parse problem noticed here";
-                    range = new vscode.Range(parseInt(match[2]) - 1, parseInt(match[4]),
-                        parseInt(match[3]) - 1, 0);
-                    diagnostics.push(new vscode.Diagnostic(range, message, vscode.DiagnosticSeverity.Information));
-                    message = "No parse for:" + match[1];
-                    range = new vscode.Range(parseInt(match[2]) - 1, 0,
-                        parseInt(match[2]) - 1, parseInt(match[4]));
-                    severity = vscode.DiagnosticSeverity.Error
-                }
-                else if (match = item.match(/multiple parses of (.*) at file.*line\s*(\d+)\s*-\s*(\d+):(.*)/i)) {
-                    message = "Multiple parses for:" + match[1] + match[4].split("--").join("\n\nPossible parse: ");
-                    range = new vscode.Range(parseInt(match[2]) - 1, 0,
-                        parseInt(match[3]) - 1, 0);
-                    severity = vscode.DiagnosticSeverity.Error
-                }
-                else if (match = item.match(/Fatal error: exception Failure\(\"(.*)\"\)/i)) {
-                    message = "Fatal error, exception thrown: " + match[1];
-                }
-                //Catch-all for remaining errors and warnings 
-                else if (match = item.match(/(warning|error):?(.*)/i)) {
-                    message = match[2];
-                }
-                else {
+                let lineArr = item.split("\n");
+                // if (lineArr.length > 1) {
+                let firstLine = lineArr[0];
+                let maybeLoc = parseLoc(firstLine);
+                if (maybeLoc.length > 0) {
+                    ranges = maybeLoc;
+                    lineArr.splice(0, 1);
+                    let rest = lineArr.join("\n");
+                    console.log("Setting REST to " + rest);
+                    item = rest;
+                    // }
+                } 
+                // else {
+                //     console.log("Only one line in the item");
+                // }
+
+                let severity = null;
+                if (item.startsWith("Warning:")) {
+                    severity = vscode.DiagnosticSeverity.Warning;
+                    item = item.replace(/^(Warning:\.)/, "")
+                } else if (item.startsWith("Error:")) {
+                    severity = vscode.DiagnosticSeverity.Error;
+                    item = item.replace(/^(Error:\.)/, "")
+                } else {
+                    console.log("Invalid error level: " + item);
                     return;
                 }
+                
 
-                let diagnostic = new vscode.Diagnostic(range, message, severity);
-                diagnostics.push(diagnostic);
+                ranges.forEach(range => {
+                    let diagnostic = new vscode.Diagnostic(range, item, severity);
+                    diagnostics.push(diagnostic);
+                });
+
             }
             let handleStream = (streamString: string) => () => {
                 let stream = (streamString == "STDOUT" ? stdoutData : stderrData)
                 this.logMessage("Ott output from " + stream);
                 this.logMessage(stdoutData);
 
-                //Replace annoying multi-line errors
-                stream = stream.replace(/error:\s*(\(in checking syntax\))?\s*\n/g, "error: ");
-                stream = stream.replace(/error:\s*(\(in checking and disambiguating quotiented syntax\))?\s*\n/g, "error: ");
-                stream = stream.replace(/Error\s*in processing definitions:\s*\n/g, "");
-                stream = stream.replace(/\nno parses \(/g, " -- no parses (");
-                stream = stream.replace(
-                    /\n(.*)\n\s*or plain:(.*)/g,
-                    (match, $1, $2, offset, original) => { return " -- " + $2; });
-                stream = stream.replace(
-                    /production\s*\n(.*)\n\s*of rule/g,
-                    (match, $1, $2, offset, original) => { return " production " + $1 + " of rule"; });
+                let messages = getMessages(stream);
+                console.log("Got messages: " + messages);
+                messages.forEach(doMatches(diagnostics));
 
-                // console.log("STDOUT: " + stream);
-                stream.split("\n").forEach(doMatches(diagnostics));
+                //Replace annoying multi-line errors
                 this.diagnosticCollection.set(textDocument.uri, diagnostics);
 
             }

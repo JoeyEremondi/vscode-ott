@@ -4,7 +4,7 @@
 metavar typvar, X ::=
   {{ isa string }} {{ coq  }} {{ coq-equality }} {{ hol string }} {{com test}}
   {{ lex alphanum }}     
-
+ 
 metavar value_name, x ::=
   {{ isa string }} {{ coq  }} {{ coq-equality }} {{ hol string }} {{com test}}
   {{ lex alphanum }} 

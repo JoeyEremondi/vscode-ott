@@ -2,7 +2,7 @@
 metavar typvar, X ::=
   {{ isa string }} {{ coq  }} {{ coq-equality }} {{ hol string }} {{com test}}
   {{ lex alphanum }}     
-
+  
 meatavar value_name, x ::=
   {{ isa string }} {{ coq  }} {{ coq-equality }} {{ hol string }} {{com test}}
   {{ lex alphanum }} 
@@ -10,13 +10,13 @@ meatavar value_name, x ::=
 indexvar index, i, j, n, m ::=
   {{ isa nat }} {{ coq nat Fixpoint }}  {{ hol num }}
   {{ lex numeral }}
-
-grammar
-
+  
+grammar 
+ 
 typexpr, t :: TE_ ::=
   | typvar                            ::   :: typvar
   | typexpr -> typexpr'                ::   :: arrow
-  
+    
 
 expr, e :: E_ ::=
   | value_name                         ::   :: ident
