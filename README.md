@@ -45,6 +45,8 @@ This can be disabled with the `noCheckOutputs` magic comment above.
 
 ## Requirements
 
+Must have the Ott binary installed.
+
 Syntax highlighting recognizes some languages within the `hom` blocks,
 if you have a language pack installed for that language.
 Recommended packages to allow this are:
@@ -79,6 +81,7 @@ Alternately, if you would like to collaborate, I will happily add collaborators 
 - Remove buggy postprocessing command
 - Revamp magic comments system
 - Support for showing Coq errors in generated code
+- Much more configurable
 
 ### [ 0.0.6 ]
 - Fix regression in parse "no parse" errors

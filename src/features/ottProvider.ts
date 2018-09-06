@@ -35,8 +35,7 @@ class OttConfig {
     outputs: [OutputType, string][] = [];
     flags: string[] = [];
     options: [string, string][] = [
-        ["colour", "false"],
-        ["output_source_locations", "2"]
+        ["colour", "false"]
     ];
     checkOutputs: boolean = true;
     outputSourceLocs : boolean = true;
@@ -52,17 +51,25 @@ export class OttLintingProvider {
 
     private diagnosticCollection: vscode.DiagnosticCollection;
 
+    private loadSettings(){
+        this.config = new OttConfig();
+        this.config.ottCommand = vscode.workspace.getConfiguration('ott').get('binaryPath');
+        this.config.checkOutputs = vscode.workspace.getConfiguration('ott').get('checkOutputs');
+        //Can only check output if source locations are included
+        if (!vscode.workspace.getConfiguration('ott').get('outputSourceLocs')){
+            this.config.outputSourceLocs = false;
+        } else {
+            this.config.options.push(["output_source_locations", "2"]);
+        }
+        this.config.flags = this.config.flags.concat(vscode.workspace.getConfiguration('ott').get('defaultFlags'));
+        this.config.options = this.config.options.concat(vscode.workspace.getConfiguration('ott').get('defaultOptions'));
+    }
+
     public constructor() {
         this.logPanel = vscode.window.createOutputChannel('Ott');
         this.logPanel.appendLine("Ott Language Extension Started");
-        this.config = new OttConfig();
-        this.config.ottCommand = vscode.workspace.getConfiguration('ott').get('ott_command');
-        this.config.checkOutputs = vscode.workspace.getConfiguration('ott').get('check_outputs');
-        //Can only check output if source locations are included
-        if (!vscode.workspace.getConfiguration('ott').get('output_source_locs')){
-            this.config.outputSourceLocs = false;
-            this.config.checkOutputs =false;
-        } 
+        this.loadSettings();
+        
         
     }
 
@@ -193,7 +200,7 @@ export class OttLintingProvider {
         }
         this.logMessage("Starting to lint Ott document");
         //Reset config, since file might have changed
-        this.config = new OttConfig();
+        this.loadSettings();
 
         let stdoutData = ''
         let stderrData = ''
@@ -254,7 +261,6 @@ export class OttLintingProvider {
                 else if (match = commentValue.match(/\s*noOutputSourceLoc\s*/)) {
                     this.logMessage("Magic comment source location output: " + match[1]);
                     this.config.outputSourceLocs = false;
-                    this.config.checkOutputs = false;
                 }
                 else {
                     this.logMessage("Invalid magic comment: " + commentValue);
@@ -266,7 +272,7 @@ export class OttLintingProvider {
             match = magicCommentRE.exec(docString);
         }
 
-        let args = ["-i", textDocument.fileName, "-colour", "false"];
+        let args = ["-i", textDocument.fileName];
         this.config.options.forEach(opt => {
             let [key, val] = opt;
             args.push("-" + key);
@@ -354,7 +360,7 @@ export class OttLintingProvider {
             childProcess.stderr.on('end', handleStream("STDERR"));
             //Run any post-processors from magic comments once ott has finished running
             childProcess.on('exit', () => {
-                if (this.config.checkOutputs && !this.config.foundError) {
+                if (this.config.checkOutputs && this.config.outputSourceLocs && !this.config.foundError) {
                     try {
                         this.config.outputs.forEach(outPair => {
                             let [fileType, outFile] = outPair;
@@ -450,7 +456,7 @@ export class OttLintingProvider {
         }, null, subscriptions);
         
         //Only run linters automatically if the options allow it
-        if (vscode.workspace.getConfiguration('ott').get('lint_on_save')){
+        if (vscode.workspace.getConfiguration('ott').get('lintOnSave')){
             vscode.workspace.onDidOpenTextDocument(this.doOttLint, this, subscriptions);
             vscode.workspace.onDidSaveTextDocument(this.doOttLint, this);
             // lint all open Ott documents

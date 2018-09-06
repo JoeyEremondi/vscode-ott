@@ -1,5 +1,12 @@
 # Change Log
 
+### [ 0.0.7 ]
+- Updated for Ott 0.29 error message format (see [#41](https://github.com/ott-lang/ott/pull/41))
+- Remove buggy postprocessing command
+- Revamp magic comments system
+- Support for showing Coq errors in generated code
+- Much more configurable
+
 ### [ 0.0.6 ]
 - Fix regression in parse "no parse" errors
 - Add parsing for "no conclusion" errors

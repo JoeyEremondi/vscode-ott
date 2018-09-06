@@ -48,25 +48,35 @@
             "type": "object",
             "title": "Ott configuration",
             "properties": {
-                "ott.ott_command": {
+                "ott.binaryPath": {
                     "type": ["string"],
                     "default": "ott",
                     "description": "Command used to invoke ott"
                 },
-                "ott.check_output": {
+                "ott.checkOutputs": {
                     "type": ["boolean"],
-                    "default": "true",
+                    "default": true,
                     "description": "Should the files Ott generates be checked after linting? (Currently only supports .v)"
                 },
-                "ott.output_source_locs": {
+                "ott.outputSourceLocs": {
                     "type": ["boolean"],
-                    "default": "true",
+                    "default": true,
                     "description": "Should generated files have comments with corresponding Ott locations? (if false, disables output checking)"
                 },
-                "ott.lint_on_save": {
+                "ott.lintOnSave": {
                     "type": ["boolean"],
-                    "default": "true",
+                    "default": true,
                     "description": "Should Ott be invoked every time the file is saved?"
+                },
+                "ott.defaultFlags": {
+                    "type": ["array"],
+                    "default": [],
+                    "description": "Flags to pass to Ott (in addition to magic comment flags)"
+                },
+                "ott.defaultOptions": {
+                    "type": ["array"],
+                    "default": [],
+                    "description": "Options to pass to Ott (in addition to magic comment options)"
                 }
             }
         }
