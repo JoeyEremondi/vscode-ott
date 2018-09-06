@@ -22,29 +22,32 @@ to the color choices.
 
 When you save your file, it will be run with `ott` and any errors will be reported inline. 
 
-By default, `ott` is run with no arguments. However, if the first line of your file contains a magic comment of the form:
+By default, `ott` is run with no arguments. However, if your file contains a magic comment of the form:
 
-```% !Ott args = "ARGS"``` 
+```% !Ott output file.ext``` 
 
-Then, Ott will be run with whatever args are given. This is useful for re-generating
-LaTeX or proof-assistant code automatically when you save.
+Then, Ott will be run with with the option `-o file.ext`.
 
-#### Post-processors
-If there are one or more magic comments of the form:
+Other magic comments are avaliable:
 
-```% !Ott postprocess = "COMMAND"``` 
+* ```% !Ott flag NAME``` passes `-flag` to ott
+* ```% !Ott option NAME VALUE``` passes `-name value` to ott
+* ```% !Ott binary /some/path``` uses `/some/path` as the command to invoke Ott
+* ```% !Ott noCheckOutputs``` disables checking the Coq outputs  
+* ```% !Ott noOutputSourceLoc``` disables source locations in output (and checking the Coq outputs)  
 
-then on saving, after `ott` has finished, the given command(s) will be run.
-This is useful for building LaTeX into a PDF file, or for automatically running scripts
-over generated proof-assistant code.
+#### Checking generated code
+If Coq is specified as an output, then the plugin will attempt to
+compile the generated Coq code, tracing any errors or warnings back to
+their origin in the Ott file.
+
+This can be disabled with the `noCheckOutputs` magic comment above.
 
 ## Requirements
 
-The command `ott` must be installed and on your `$PATH`.
-
 Syntax highlighting recognizes some languages within the `hom` blocks,
 if you have a language pack installed for that language.
-Reccomended packages to allow this are:
+Recommended packages to allow this are:
 
 * [VSCoq](https://marketplace.visualstudio.com/items?itemName=siegebell.vscoq) or [Coq](https://marketplace.visualstudio.com/items?itemName=ruoz.coq)
 * [Isabelle](https://marketplace.visualstudio.com/items?itemName=makarius.isabelle)
@@ -52,14 +55,12 @@ Reccomended packages to allow this are:
 
 ## Extension Settings
 
-None so far.
+* `ott.ott_command`: the command used to invoke the Ott compiler. Defaults to `ott`.
+
 
 ## Known Issues
 
-* No option to specify `ott` binary location
 * Check-on-save always on, should be optional
-* Not all errors have location (requires changes to Ott to fix)
-* Error parsing is hacky, so some errors may not be reported
 
 ## Future features
 
@@ -72,6 +73,12 @@ Contributions are welcome and encouraged! Feel free to leave any issues or submi
 Alternately, if you would like to collaborate, I will happily add collaborators to the repo.
 
 ## Release Notes
+
+### [ 0.0.7 ]
+- Updated for Ott 0.29 error message format (see [#41](https://github.com/ott-lang/ott/pull/41))
+- Remove buggy postprocessing command
+- Revamp magic comments system
+- Support for showing Coq errors in generated code
 
 ### [ 0.0.6 ]
 - Fix regression in parse "no parse" errors

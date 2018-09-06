@@ -39,6 +39,7 @@ class OttConfig {
         ["output_source_locations", "2"]
     ];
     checkOutputs: boolean = true;
+    outputSourceLocs : boolean = true;
     ottCommand: string = "ott";
     foundError: boolean = false;
 }
@@ -52,10 +53,17 @@ export class OttLintingProvider {
     private diagnosticCollection: vscode.DiagnosticCollection;
 
     public constructor() {
-        this.logPanel = vscode.window.createOutputChannel('Ott Output');
+        this.logPanel = vscode.window.createOutputChannel('Ott');
         this.logPanel.appendLine("Ott Language Extension Started");
         this.config = new OttConfig();
         this.config.ottCommand = vscode.workspace.getConfiguration('ott').get('ott_command');
+        this.config.checkOutputs = vscode.workspace.getConfiguration('ott').get('check_outputs');
+        //Can only check output if source locations are included
+        if (!vscode.workspace.getConfiguration('ott').get('output_source_locs')){
+            this.config.outputSourceLocs = false;
+            this.config.checkOutputs =false;
+        } 
+        
     }
 
     private logMessage(s: string) {
@@ -180,10 +188,10 @@ export class OttLintingProvider {
     }
 
     private doOttLint(textDocument: vscode.TextDocument) {
-        this.logMessage("\n\n\n********************************************************")
         if (textDocument.languageId !== 'ott') {
             return;
         }
+        this.logMessage("Starting to lint Ott document");
         //Reset config, since file might have changed
         this.config = new OttConfig();
 
@@ -239,6 +247,15 @@ export class OttLintingProvider {
                     this.logMessage("Magic comment binary path detected: " + match[1]);
                     this.config.ottCommand = match[1];
                 }
+                else if (match = commentValue.match(/\s*noCheckOutputs\s*/)) {
+                    this.logMessage("Magic comment disabling output checking: " + match[1]);
+                    this.config.checkOutputs = false;
+                }
+                else if (match = commentValue.match(/\s*noOutputSourceLoc\s*/)) {
+                    this.logMessage("Magic comment source location output: " + match[1]);
+                    this.config.outputSourceLocs = false;
+                    this.config.checkOutputs = false;
+                }
                 else {
                     this.logMessage("Invalid magic comment: " + commentValue);
                     let diagnostic = new vscode.Diagnostic(range, "Invalid magic comment: " + commentValue, vscode.DiagnosticSeverity.Warning);
@@ -278,8 +295,8 @@ export class OttLintingProvider {
 
             let handleStream = (streamString: string) => () => {
                 let stream = (streamString == "STDOUT" ? stdoutData : stderrData)
-                this.logMessage("Ott output from " + stream);
-                this.logMessage(stdoutData);
+                this.debugMessage("Ott output from " + stream);
+                this.debugMessage(stdoutData);
 
                 let messages = this.getMessages(stream);
                 this.debugMessage("Got messages: " + messages);
@@ -295,7 +312,7 @@ export class OttLintingProvider {
 
             let findSourceMap = (outFile: string) => onClose => {
                 var ret: vscode.Range[] = []; 
-                console.log("Out file: " + outFile);
+                this.debugMessage("Out file: " + outFile);
                 process.chdir(vscode.workspace.rootPath);
                 //https://nodejs.org/api/readline.html#readline_example_read_file_stream_line_by_line
                 const rl = rd.createInterface({
@@ -312,7 +329,7 @@ export class OttLintingProvider {
                         ret[lineNum] = rng;
                         
                     } else {
-                        console.log("Skipping coq line " + line);
+                        this.debugMessage("Skipping coq line " + line);
                     }
                     lineNum += 1;
                 });
@@ -356,7 +373,7 @@ export class OttLintingProvider {
                                         });
                                     }
                                     coqProcess.stderr.on('end', () => {
-                                        this.logMessage("Got coq stderr " + coqMessages);
+                                        this.debugMessage("Got coq stderr " + coqMessages);
                                         //Load the coq file for transforming
                                         findSourceMap(outFile)(
                                             sourceMap => () => {
@@ -428,16 +445,19 @@ export class OttLintingProvider {
         // this.command = vscode.commands.registerCommand(OttLintingProvider.commandId, this.runCodeAction, this);
         subscriptions.push(this);
         this.diagnosticCollection = vscode.languages.createDiagnosticCollection();
-
-        vscode.workspace.onDidOpenTextDocument(this.doOttLint, this, subscriptions);
         vscode.workspace.onDidCloseTextDocument((textDocument) => {
             this.diagnosticCollection.delete(textDocument.uri);
         }, null, subscriptions);
+        
+        //Only run linters automatically if the options allow it
+        if (vscode.workspace.getConfiguration('ott').get('lint_on_save')){
+            vscode.workspace.onDidOpenTextDocument(this.doOttLint, this, subscriptions);
+            vscode.workspace.onDidSaveTextDocument(this.doOttLint, this);
+            // lint all open Ott documents
+            vscode.workspace.textDocuments.forEach(this.doOttLint, this);
+        }
 
-        vscode.workspace.onDidSaveTextDocument(this.doOttLint, this);
-
-        // lint all open Ott documents
-        vscode.workspace.textDocuments.forEach(this.doOttLint, this);
+        
     }
 
     public dispose(): void {

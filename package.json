@@ -52,6 +52,21 @@
                     "type": ["string"],
                     "default": "ott",
                     "description": "Command used to invoke ott"
+                },
+                "ott.check_output": {
+                    "type": ["boolean"],
+                    "default": "true",
+                    "description": "Should the files Ott generates be checked after linting? (Currently only supports .v)"
+                },
+                "ott.output_source_locs": {
+                    "type": ["boolean"],
+                    "default": "true",
+                    "description": "Should generated files have comments with corresponding Ott locations? (if false, disables output checking)"
+                },
+                "ott.lint_on_save": {
+                    "type": ["boolean"],
+                    "default": "true",
+                    "description": "Should Ott be invoked every time the file is saved?"
                 }
             }
         }
