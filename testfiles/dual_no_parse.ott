@@ -10,7 +10,7 @@ metavar value_name, x ::=
 indexvar index, i, j, n, m ::=
   {{ isa nat }} {{ coq nat Fixpoint }}  {{ hol num }}
   {{ lex numeral }}
-
+ 
 grammar
 
 typexpr, t :: TE_ ::=
@@ -58,9 +58,9 @@ defn
 
         |- v : t
  ----------------------------- :: crazy
-        |- e ~ x : t 
+        |- e ~ x : t  
 
         |- v : t
  ----------------------------- :: crazy
-        |- e ~ x : t 
+        |- e ~ x : t  
 
