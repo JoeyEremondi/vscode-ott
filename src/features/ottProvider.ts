@@ -5,9 +5,12 @@
 import * as path from 'path';
 import * as cp from 'child_process';
 import ChildProcess = cp.ChildProcess;
+import * as fs from 'fs';
+import * as rd from 'readline'
 
 import * as vscode from 'vscode';
 import { WSAETOOMANYREFS } from 'constants';
+import { debuglog } from 'util';
 
 /*
 warning:
@@ -31,7 +34,10 @@ enum OutputType {
 class OttConfig {
     outputs: [OutputType, string][] = [];
     flags: string[] = [];
-    options: [string, string][] = [];
+    options: [string, string][] = [
+        ["colour", "false"],
+        ["output_source_locations", "2"]
+    ];
     checkOutputs: boolean = true;
     ottCommand: string = "ott";
     foundError: boolean = false;
@@ -67,6 +73,11 @@ export class OttLintingProvider {
         let match;
         line.split(";").forEach(locString => {
             if (match = locString.match(/(File [\s\S]* )?on line (\d+), column (\d+) - (\d+).*/i)) {
+                this.debugMessage("match 1 " + match);
+                let range = new vscode.Range(parseInt(match[2]) - 1, parseInt(match[3]),
+                    parseInt(match[2]) - 1, parseInt(match[4]));
+                ranges.push(range);
+            } else if (match = locString.match(/(File \"[\s\S]*\",)? line (\d+), characters (\d+)-(\d+).*/i)) {
                 this.debugMessage("match 1 " + match);
                 let range = new vscode.Range(parseInt(match[2]) - 1, parseInt(match[3]),
                     parseInt(match[2]) - 1, parseInt(match[4]));
@@ -168,11 +179,13 @@ export class OttLintingProvider {
 
     }
 
-    private doHlint(textDocument: vscode.TextDocument) {
+    private doOttLint(textDocument: vscode.TextDocument) {
         this.logMessage("\n\n\n********************************************************")
         if (textDocument.languageId !== 'ott') {
             return;
         }
+        //Reset config, since file might have changed
+        this.config = new OttConfig();
 
         let stdoutData = ''
         let stderrData = ''
@@ -186,9 +199,9 @@ export class OttLintingProvider {
         let magicCommentRE = /%\s+!Ott(.*)\n/g;
         let docString = textDocument.getText().toString();
         let match = magicCommentRE.exec(docString);
-        console.log("Looking for comment " + match);
+        this.debugMessage("Looking for comment " + match);
         while (match != null) {
-            console.log("Found comment " + match);
+            this.debugMessage("Found comment " + match);
             let commentValue = match[1];
             let range = textDocument.getWordRangeAtPosition(new vscode.Position(match.index, match.index + match.length));
             if (true) {
@@ -222,8 +235,8 @@ export class OttLintingProvider {
                     this.logMessage("Magic comment option detected: " + match[1] + " " + match[2]);
                     this.config.options.push([match[1], match[2]]);
                 }
-                else if (match = commentValue.match(/\s*commandPath\s*(\S*) \s*/)) {
-                    this.logMessage("Magic comment command path detected: " + match[1]);
+                else if (match = commentValue.match(/\s*binary\s*(\S*)\s*/)) {
+                    this.logMessage("Magic comment binary path detected: " + match[1]);
                     this.config.ottCommand = match[1];
                 }
                 else {
@@ -243,6 +256,7 @@ export class OttLintingProvider {
             args.push(val);
         });
         this.config.outputs.forEach(outFile => {
+            this.debugMessage("Pushing arg " + outFile);
             args.push("-o");
             args.push(outFile[1]);
         });
@@ -279,6 +293,46 @@ export class OttLintingProvider {
 
             //If stdout is done, run postprocessor command
 
+            let findSourceMap = (outFile: string) => onClose => {
+                var ret: vscode.Range[] = []; 
+                console.log("Out file: " + outFile);
+                process.chdir(vscode.workspace.rootPath);
+                //https://nodejs.org/api/readline.html#readline_example_read_file_stream_line_by_line
+                const rl = rd.createInterface({
+                    input: fs.createReadStream(outFile),
+                    crlfDelay: Infinity
+                });
+                let lineNum = 0;
+                rl.on('line', (line) => {
+                    let match;
+                    let theRe = /\(\* #source file .* lines (\d+) - (\d+) \*\)/
+                    if (match = line.match(theRe)) {
+                        let rng = new vscode.Range(parseInt(match[1]) - 1, 0, parseInt(match[2]) - 1, 10000);
+                        // this.debugMessage("Adding " + lineNum + " with range" + rng.start.line);
+                        ret[lineNum] = rng;
+                        
+                    } else {
+                        console.log("Skipping coq line " + line);
+                    }
+                    lineNum += 1;
+                });
+                rl.on('close', onClose(ret));
+            }
+
+            let transformRange = (sourceMap, rng: vscode.Range) => {
+                let startLine = rng.start.line;
+                while (startLine >= 0) {
+                    if (sourceMap[startLine] != null) {
+                        // this.logMessage("Transformed coq file range " + rng + " into " + sourceMap[startLine])
+                        return sourceMap[startLine];
+                    }
+
+                    startLine--;
+                }
+
+                return new vscode.Range(0, 0, 0, 0);
+            }
+
             childProcess.stdout.on('end', handleStream("STDOUT"));
             childProcess.stderr.on('end', handleStream("STDERR"));
             //Run any post-processors from magic comments once ott has finished running
@@ -303,10 +357,23 @@ export class OttLintingProvider {
                                     }
                                     coqProcess.stderr.on('end', () => {
                                         this.logMessage("Got coq stderr " + coqMessages);
-                                        let messages = this.getMessages(coqMessages);
-                                        messages.forEach(this.doMatches(diagnostics));
-                                        //Finally, add all our diagnostics
-                                        this.diagnosticCollection.set(textDocument.uri, diagnostics);
+                                        //Load the coq file for transforming
+                                        findSourceMap(outFile)(
+                                            sourceMap => () => {
+                                                let messages = this.getMessages(coqMessages);
+                                                let coqDiagnostics: vscode.Diagnostic[] = [];
+                                                messages.forEach(this.doMatches(coqDiagnostics));
+                                                //Fix the location in each diagnostic
+                                                coqDiagnostics.forEach(diag => {
+                                                    diag.range = transformRange(sourceMap, diag.range);
+                                                });
+                                                //Finally, add all our diagnostics
+                                                diagnostics = diagnostics.concat(coqDiagnostics);
+                                                this.diagnosticCollection.set(textDocument.uri, diagnostics);
+                                            }
+                                        )
+
+
                                     }
                                     );
                                     break;
@@ -362,15 +429,15 @@ export class OttLintingProvider {
         subscriptions.push(this);
         this.diagnosticCollection = vscode.languages.createDiagnosticCollection();
 
-        vscode.workspace.onDidOpenTextDocument(this.doHlint, this, subscriptions);
+        vscode.workspace.onDidOpenTextDocument(this.doOttLint, this, subscriptions);
         vscode.workspace.onDidCloseTextDocument((textDocument) => {
             this.diagnosticCollection.delete(textDocument.uri);
         }, null, subscriptions);
 
-        vscode.workspace.onDidSaveTextDocument(this.doHlint, this);
+        vscode.workspace.onDidSaveTextDocument(this.doOttLint, this);
 
-        // Hlint all open haskell documents
-        vscode.workspace.textDocuments.forEach(this.doHlint, this);
+        // lint all open Ott documents
+        vscode.workspace.textDocuments.forEach(this.doOttLint, this);
     }
 
     public dispose(): void {
