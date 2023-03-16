@@ -76,6 +76,9 @@ Alternately, if you would like to collaborate, I will happily add collaborators 
 
 ## Release Notes
 
+### [ 0.0.8 ]
+- Support syntax highlight in embedded blocks of `tex-preample` `tex-wrap-pre` `tex-wrap-post`
+
 ### [ 0.0.7 ]
 - Updated for Ott 0.29 error message format (see [#41](https://github.com/ott-lang/ott/pull/41))
 - Remove buggy postprocessing command

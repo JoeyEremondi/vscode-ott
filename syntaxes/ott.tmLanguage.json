@@ -55,7 +55,7 @@
 			"patterns": [{
 					"name": "support.function.ott",
 					"contentName": "comment.ott",
-					"begin": "{{( )*(coq-equality|lex|repr-locally-nameless|phantom|texvar|isavar|holvar|ocamlvar|aux|lem|ihtexlong|order|isasyn|isaprec|lemwcf|coq-universe|tex-preamble|coq-lib|isa-auxfn-proof|isa-subrule-proof|isa-proof|com)",
+					"begin": "{{( )*(coq-equality|lex|repr-locally-nameless|phantom|texvar|isavar|holvar|ocamlvar|aux|lem|ihtexlong|order|isasyn|isaprec|lemwcf|coq-universe|coq-lib|isa-auxfn-proof|isa-subrule-proof|isa-proof|com)",
 					"end": "}}"
 				},
 				{
@@ -112,7 +112,7 @@
 			"patterns": [{
 				"name": "support.function.ott",
 				"contentName": "comment.ott",
-				"begin": "{{( )*(tex)",
+				"begin": "{{( )*(tex|tex-preamble|tex-wrap-pre|tex-wrap-post)",
 				"end": "}}",
 				"patterns": [{
 					"include": "text.tex.latex"
